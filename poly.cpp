@@ -32,7 +32,16 @@ long double SQaM(long double a, int b){
     return result;
 }
 
-std::vector<TERM> poly(std::vector<TERM> v1, long double x){
+long double horner_poly(std::vector<long double> v, int x, int min){
+    long double result = 0.0;
+    for(size_t i = v.size() - 1; i >= 0; i--){
+        result = result*x+v[i];
+    }
+    result*=SQaM(x, min);
+    return result;
+}
+
+long double poly(std::vector<TERM> v1, long double x){
     if(x == 0) return polycoef.back().pow == 0 ? polycoef.back().coef : 0;
     if(x == 1) return std::accumulate(polycoef.begin(), polycoef.end(), 0.0L, [](long double total, const auto& p){return total+p.coef;});
     if(x == -1) return std::accumulate(polycoef.begin(), polycoef.end(), 0.0L, [](long double total, const auto& p){return (p.pow%2)?total-p.coef:total+p.coef;});
@@ -218,7 +227,7 @@ std::vector<TERM> poly_raise(std::vector<TERM> base_poly, int power){
 }
 
 std::vector<TERM> poly_compose(std::vector<TERM> v1, std::vector<TERM> v2){
-    std::map<int, long double, std::greater<int>> res;
+    std::unordered_map<int, long double> res;
     std::vector<TERM> med{{1, 0}};
     long double outer_coef;
     int exp, prev_exp = 0;
@@ -242,6 +251,7 @@ std::vector<TERM> poly_compose(std::vector<TERM> v1, std::vector<TERM> v2){
     std::vector<TERM> result, default_vec{{0,0}};
     for(auto& [pows, coefs] : res)
         if(coefs!=0)result.push_back({coefs, pows});
+    std::sort(result.begin(), result.end(), [](const auto& a, const auto& b){ return a.pow > b.pow;});
     return result.empty()?default_vec:result;
 }
 
@@ -256,6 +266,19 @@ std::vector<TERM> poly_ind_int(std::vector<TERM> v){
 long double poly_def_int(std::vector<TERM> v, long double a, long double b){
     std::vector<TERM> V = poly_ind_int(v);
     return poly(V, b)-poly(V, a);
+}
+
+std::string power_display(int i){
+    std::string result = "";
+    if(i == 0) return result;
+    if(i == 1) return "x";
+    std::string super[] = {"⁰", "¹", "²", "³", "⁴", "⁵", "⁶", "⁷", "⁸", "⁹"};
+    while(i > 0){
+        result = super[i%10] + result;
+        i/=10;
+    }
+    result = "x"+result;
+    return result;
 }
 
 class POLY;
@@ -279,6 +302,10 @@ class DENSE_POLY{
             std::vector<TERM> default_vec{{0,0}};
             if(alias.empty()) alias = default_vec;
             return result;
+        }
+        
+        long double operator() (const long double point){
+            return horner_poly(this->coefficients, point, min_deg);
         }
 }
 
@@ -429,8 +456,24 @@ class POLY{
             else return this->terms[idx].coef;
         }
         
-        void print(){
-            //..logic
+        void print(std::ostream& os){
+            std::vector<TERM>& alias = this->terms;
+            if(alias.empty()){
+                os << 0;
+                return;
+            }
+            if(alias.front().pow==0) os << alias[0].coef;
+            else{
+                if(std::abs(alias[i].coef)==1) os << (alias[0].coef>0?"":"-");
+                else os << (alias[0].coef>0?"":"-") << std::abs(alias[0].coef);
+                os << power_display(alias[0].pow);
+                for(size_t i = 1; i < alias.size() - 1; i++){
+                    os << (alias[i].coef>0?" + ":" - ");
+                    if((alias[i].coef)==1&&alias[i].pow!=0){}
+                    else os << std::abs(alias[i].coef) << power_display(alias[i].pow);
+                    if(i % 10 == 0) os << "\n";
+                }
+            }
         }
         
         int degree(){
