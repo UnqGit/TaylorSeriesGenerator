@@ -456,7 +456,7 @@ class POLY{
             else return this->terms[idx].coef;
         }
         
-        void print(std::ostream& os){
+        void print(std::ostream& os) const{
             std::vector<TERM>& alias = this->terms;
             if(alias.empty()){
                 os << 0;
@@ -464,13 +464,14 @@ class POLY{
             }
             if(alias.front().pow==0) os << alias[0].coef;
             else{
-                if(std::abs(alias[i].coef)==1) os << (alias[0].coef>0?"":"-");
+                if(std::abs(alias[0].coef)==1) os << (alias[0].coef>0?"":"-");
                 else os << (alias[0].coef>0?"":"-") << std::abs(alias[0].coef);
                 os << power_display(alias[0].pow);
-                for(size_t i = 1; i < alias.size() - 1; i++){
+                for(size_t i = 1; i < alias.size(); i++){
                     os << (alias[i].coef>0?" + ":" - ");
                     if((alias[i].coef)==1&&alias[i].pow!=0){}
-                    else os << std::abs(alias[i].coef) << power_display(alias[i].pow);
+                    else os << std::abs(alias[i].coef);
+os << power_display(alias[i].pow);
                     if(i % 10 == 0) os << "\n";
                 }
             }
