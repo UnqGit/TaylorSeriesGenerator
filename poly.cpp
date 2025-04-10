@@ -390,11 +390,11 @@ class DENSE_POLY{
         
         DENSE_POLY operator+ (const long double val) const{
             DENSE_POLY result;
-            if(result.coefficients.empty()){
-                result.coefficients = {0};
+            if(this->coefficients.empty()){
+                result.coefficients = {val};
                 return result;
             }
-            if(result.min_deg!=0){
+            if(this->min_deg!=0){
                 result.coefficients.resize(this->degree()+1, 0);
                 std::vector<long double> alias = this->coefficients;
                 result.coefficients[0] = val;
@@ -411,11 +411,11 @@ class DENSE_POLY{
         
         DENSE_POLY operator- (const long double val) const{
             DENSE_POLY result;
-            if(result.coefficients.empty()){
-                result.coefficients = {0};
+            if(this->coefficients.empty()){
+                result.coefficients = {-val};
                 return result;
             }
-            if(result.min_deg!=0){
+            if(this->min_deg!=0){
                 result.coefficients.resize(this->degree()+1, 0);
                 std::vector<long double> alias = this->coefficients;
                 result.coefficients[0] = -val;
@@ -452,16 +452,18 @@ class DENSE_POLY{
         
         DENSE_POLY& operator+= (const long double val){
             if(this->coefficients.empty()){
-                this->coefficients = {0};
+                this->coefficients = {val};
                 return *this;
             }
             if(this->min_deg!=0){
-                std::vector<long double> temp(this->degree()+1, 0);
+                std::vector<long double> temp((this->degree())+1, 0);
                 temp[0] = val;
                 int min = this->min_deg
                 for(int i = 0; i < this->coefficients.size(); i++){
                     alias[i+min] = this->coefficients[i];
                 }
+                this->coefficients = alias;
+                this->min_deg = 0;
             }
             else{
                 this->coefficients[0] += val;
@@ -471,7 +473,7 @@ class DENSE_POLY{
         
         DENSE_POLY& operator-= (const long double val){
             if(this->coefficients.empty()){
-                this->coefficients = {0};
+                this->coefficients = {-val};
                 return *this;
             }
             if(this->min_deg!=0){
@@ -481,6 +483,8 @@ class DENSE_POLY{
                 for(int i = 0; i < this->coefficients.size(); i++){
                     alias[i+min] = this->coefficients[i];
                 }
+                this->coefficients = alias;
+                this->min_deg = 0;
             }
             else{
                 this->coefficients[0] -= val;
@@ -489,20 +493,20 @@ class DENSE_POLY{
         }
         
         DENSE_POLY& operator*= (const long double val){
-            (if val == 0){
+            if(val == 0 || this->coefficients.empty()){
                 this->coefficients = {0};
                 this->min_deg = 0;
             }
-            else std::transform(this->begin(), this->end(), this->begin(), [a = val](auto p){return p*a;});
+            else std::transform(this->begin(), this->end(), this->begin(), [a = val](auto& p){return p*a;});
             return *this;
         }
         
         DENSE_POLY& operator/= (const long double val){
-            (if val == 0){
+            if(val == 0 || this->coefficients.empty()){
                 this->coefficients = {0};
                 this->min_deg = 0;
             }
-            else std::transform(this->begin(), this->end(), this->begin(), [a = val](auto p){return p/a;});
+            else std::transform(this->begin(), this->end(), this->begin(), [a = val](auto& p){return p/a;});
             return *this;
         }
         
