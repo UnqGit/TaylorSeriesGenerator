@@ -1,3 +1,13 @@
+#include <string>
+#include <iostream>
+#include <cmath>
+#include <vector>
+#include <algorithm>
+#include <iomanip>
+#include <numeric>
+#include <map>
+#include <unordered_map>
+
 std::vector<std::vector<long double>> nCr{
 {1},
 {1, 1},
