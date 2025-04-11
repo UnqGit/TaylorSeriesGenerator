@@ -1,12 +1,5 @@
 #include "holder.h"
 
-struct TERM{
-    long double coef;
-    int pow;
-};
-
-class DENSE_POLY;
-
 struct complex {
     long double real, imag;
     complex(long double r = 0, long double i = 0) : real(r), imag(i) {}
@@ -266,250 +259,239 @@ std::string power_display(int i){
     return result;
 }
 
-class POLY;
+int DENSE_POLY::degree(){
+    return this->coefficients.size()+min_deg-1;
+}
 
-class DENSE_POLY{
-    public:
-    
-        std::vector<long double> coefficients;
-        
-        int min_deg = 0;
-        
-        int degree(){
-            return this->coefficients.size()+min_deg-1;
+auto DENSE_POLY::begin(){
+    return this->coefficients.begin();
+}
+
+auto DENSE_POLY::end(){
+    return this->coefficients.begin();
+}
+
+POLY DENSE_POLY::dry() const{
+    POLY result;
+    std::vector<TERM>& alias = result.terms;
+    std::vector<TERM> default_vec{{0,0}};
+    if(this->coefficients.empty()){
+        result.terms = default_vec;
+        return result;
+    }
+    for(size_t i = this->coefficients.size()-1; i >= 0; i--)
+        if(std::abs(coefficients[i])>=1e-10) alias.push_back({coefficients[i], i+min_deg});
+    if(alias.empty()) alias = default_vec;
+    return result;
+}
+
+long double DENSE_POLY::operator() (const long double point) const{
+    return horner_poly(this->coefficients, point, this->min_deg);
+}
+
+DENSE_POLY DENSE_POLY::negate(){
+    std::transform(this->begin(), this->end(), this->begin(), [](auto p){return -p;});
+    return *this;
+}
+
+DENSE_POLY DENSE_POLY::operator-() const{
+    DENSE_POLY result = *this;
+    std::transform(result.begin(), result.end(), result.begin(), [](auto p){return -p;});
+    return result;
+}
+
+DENSE_POLY DENSE_POLY::operator+ (const DENSE_POLY& other) const{
+    int max = std::max(this->degree(), other.degree());
+    int min = std::min(this->min_deg, other.min_deg);
+    int m = this->min_deg;
+    int n = other.min_deg;
+    std::vector<long double> alias(max-min+1,0);
+    for(int i = 0; i < this->coefficients.size(); i++) alias[i+m-min]=this->coefficients[i];
+    for(int i = 0; i < other.coefficients.size(); i++) alias[i+n-min]+=other.coefficients[i];
+    DENSE_POLY result;
+    result.coefficients=alias;
+    result.min_deg=min;
+    return result;
+}
+
+DENSE_POLY DENSE_POLY::operator- (const DENSE_POLY& other) const{
+    int max = std::max(this->degree(), other.degree());
+    int min = std::min(this->min_deg, other.min_deg);
+    int m = this->min_deg;
+    int n = other.min_deg;
+    std::vector<long double> alias(max-min+1,0);
+    for(int i = 0; i < this->coefficients.size(); i++) alias[i+m-min]=this->coefficients[i];
+    for(int i = 0; i < other.coefficients.size(); i++) alias[i+n-min]-=other.coefficients[i];
+    DENSE_POLY result;
+    result.coefficients=alias;
+    result.min_deg=min;
+    return result;
+}
+
+DENSE_POLY& DENSE_POLY::operator+= (const DENSE_POLY& other){
+    int max = std::max(this.degree(), other.degree());
+    int min = std::min(this->min_deg, other.min_deg);
+    int m = this->min_deg;
+    int n = other.min_deg;
+    std::vector<long double> alias(max-min+1,0);
+    for(int i = 0; i < this->coefficients.size(); i++) alias[i+m-min]=this->coefficients[i];
+    for(int i = 0; i < other.coefficients.size(); i++) alias[i+n-min]+=other.coefficients[i];
+    this->coefficients=alias;
+    this->min_deg=min;
+    return *this;
+}
+
+DENSE_POLY& DENSE_POLY::operator-= (const DENSE_POLY& other){
+    int max = std::max(this.degree(), other.degree());
+    int min = std::min(this->min_deg, other.min_deg);
+    int m = this->min_deg;
+    int n = other.min_deg;
+    std::vector<long double> alias(max-min+1,0);
+    for(int i = 0; i < this->coefficients.size(); i++) alias[i+m-min]=this->coefficients[i];
+    for(int i = 0; i < other.coefficients.size(); i++) alias[i+n-min]-=other.coefficients[i];
+    this->coefficients=alias;
+    this->min_deg=min;
+    return *this;
+}
+
+DENSE_POLY DENSE_POLY::clean(){
+    DENSE_POLY& alias = *this;
+    std::transform(alias.begin(), alias.end(), alias.begin(), [](auto p){ return std::abs(p) < 1e-10 ? 0 : p;});
+    return *this;
+}
+
+DENSE_POLY DENSE_POLY::operator* (const DENSE_POLY& other) const{
+    DENSE_POLY result = fft_multiply(*this, other);
+    result.clean();
+    return result;
+}
+
+DENSE_POLY DENSE_POLY::operator*= (const DENSE_POLY& other){
+    *this = fft_multiply(*this, other);
+    *this->clean();
+    return *this;
+}
+
+DENSE_POLY DENSE_POLY::operator+ (const long double val) const{
+    DENSE_POLY result;
+    if(this->coefficients.empty()){
+        result.coefficients = {val};
+        return result;
+    }
+    if(this->min_deg!=0){
+        result.coefficients.resize(this->degree()+1, 0);
+        std::vector<long double> alias = this->coefficients;
+        result.coefficients[0] = val;
+        int min = this->min_deg
+        for(int i = 0; i < alias.size(); i++){
+            result.coefficients[i+min] = alias[i];
         }
-        
-        auto begin(){
-            return this->coefficients.begin();
+    }
+    else{
+        result[0] += val;
+    }
+    return result;
+}
+
+DENSE_POLY DENSE_POLY::operator- (const long double val) const{
+    DENSE_POLY result;
+    if(this->coefficients.empty()){
+        result.coefficients = {-val};
+        return result;
+    }
+    if(this->min_deg!=0){
+        result.coefficients.resize(this->degree()+1, 0);
+        std::vector<long double> alias = this->coefficients;
+        result.coefficients[0] = -val;
+        int min = this->min_deg
+        for(int i = 0; i < alias.size(); i++){
+            result.coefficients[i+min] = alias[i];
         }
-        
-        auto end(){
-            return this->coefficients.begin();
+    }
+    else{
+        result[0] -= val;
+    }
+    return result;
+}
+
+DENSE_POLY DENSE_POLY::operator* (const long double val) const{
+    DENSE_POLY result = *this;
+    if (val == 0 || this->coefficients.empty()){
+        result.coefficients = {0};
+        result.min_deg = 0;
+    }
+    else std::transform(result.begin(), result.end(), result.begin(), [a = val](auto p){return p*a;});
+    return result;
+}
+
+DENSE_POLY DENSE_POLY::operator/ (const long double val) const{
+    DENSE_POLY result = *this;
+    if (val == 0 || this->coefficients.empty()){
+        result.coefficients = {0};
+        result.min_deg = 0;
+    }
+    else std::transform(result.begin(), result.end(), result.begin(), [a = val](auto p){return p/a;});
+    return result;
+}
+
+DENSE_POLY& DENSE_POLY::operator+= (const long double val){
+    if(this->coefficients.empty()){
+        this->coefficients = {val};
+        return *this;
+    }
+    if(this->min_deg!=0){
+        std::vector<long double> temp((this->degree())+1, 0);
+        temp[0] = val;
+        int min = this->min_deg
+        for(int i = 0; i < this->coefficients.size(); i++){
+            alias[i+min] = this->coefficients[i];
         }
-        
-        POLY dry() const{
-            POLY result;
-            std::vector<TERM>& alias = result.terms;
-            std::vector<TERM> default_vec{{0,0}};
-            if(this->coefficients.empty()){
-                result.terms = default_vec;
-                return result;
-            }
-            for(size_t i = this->coefficients.size()-1; i >= 0; i--)
-                if(std::abs(coefficients[i])>=1e-10) alias.push_back({coefficients[i], i+min_deg});
-            if(alias.empty()) alias = default_vec;
-            return result;
+        this->coefficients = alias;
+        this->min_deg = 0;
+    }
+    else{
+        this->coefficients[0] += val;
+    }
+    return *this;
+}
+
+DENSE_POLY& DENSE_POLY::operator-= (const long double val){
+    if(this->coefficients.empty()){
+        this->coefficients = {-val};
+        return *this;
+    }
+    if(this->min_deg!=0){
+        std::vector<long double> temp(this->degree()+1, 0);
+        temp[0] = -val;
+        int min = this->min_deg
+        for(int i = 0; i < this->coefficients.size(); i++){
+            alias[i+min] = this->coefficients[i];
         }
-        
-        long double operator() (const long double point) const{
-            return horner_poly(this->coefficients, point, this->min_deg);
-        }
-        
-        DENSE_POLY negate(){
-            std::transform(this->begin(), this->end(), this->begin(), [](auto p){return -p;});
-            return *this;
-        }
-        
-        DENSE_POLY -(){
-            DENSE_POLY result = *this;
-            std::transform(result.begin(), result.end(), result.begin(), [](auto p){return -p;});
-            return result;
-        }
-        
-        DENSE_POLY operator+ (const DENSE_POLY& other) const{
-            int max = std::max(this->degree(), other.degree());
-            int min = std::min(this->min_deg, other.min_deg);
-            int m = this->min_deg;
-            int n = other.min_deg;
-            std::vector<long double> alias(max-min+1,0);
-            for(int i = 0; i < this->coefficients.size(); i++) alias[i+m-min]=this->coefficients[i];
-            for(int i = 0; i < other.coefficients.size(); i++) alias[i+n-min]+=other.coefficients[i];
-            DENSE_POLY result;
-            result.coefficients=alias;
-            result.min_deg=min;
-            return result;
-        }
-        
-        DENSE_POLY operator- (const DENSE_POLY& other) const{
-            int max = std::max(this->degree(), other.degree());
-            int min = std::min(this->min_deg, other.min_deg);
-            int m = this->min_deg;
-            int n = other.min_deg;
-            std::vector<long double> alias(max-min+1,0);
-            for(int i = 0; i < this->coefficients.size(); i++) alias[i+m-min]=this->coefficients[i];
-            for(int i = 0; i < other.coefficients.size(); i++) alias[i+n-min]-=other.coefficients[i];
-            DENSE_POLY result;
-            result.coefficients=alias;
-            result.min_deg=min;
-            return result;
-        }
-        
-        DENSE_POLY& operator+= (const DENSE_POLY& other){
-            int max = std::max(this.degree(), other.degree());
-            int min = std::min(this->min_deg, other.min_deg);
-            int m = this->min_deg;
-            int n = other.min_deg;
-            std::vector<long double> alias(max-min+1,0);
-            for(int i = 0; i < this->coefficients.size(); i++) alias[i+m-min]=this->coefficients[i];
-            for(int i = 0; i < other.coefficients.size(); i++) alias[i+n-min]+=other.coefficients[i];
-            this->coefficients=alias;
-            this->min_deg=min;
-            return *this;
-        }
-        
-        DENSE_POLY& operator-= (const DENSE_POLY& other){
-            int max = std::max(this.degree(), other.degree());
-            int min = std::min(this->min_deg, other.min_deg);
-            int m = this->min_deg;
-            int n = other.min_deg;
-            std::vector<long double> alias(max-min+1,0);
-            for(int i = 0; i < this->coefficients.size(); i++) alias[i+m-min]=this->coefficients[i];
-            for(int i = 0; i < other.coefficients.size(); i++) alias[i+n-min]-=other.coefficients[i];
-            this->coefficients=alias;
-            this->min_deg=min;
-            return *this;
-        }
-        
-        DENSE_POLY clean(){
-            DENSE_POLY& alias = *this;
-            std::transform(alias.begin(), alias.end(), alias.begin(), [](auto p){ return std::abs(p) < 1e-10 ? 0 : p;});
-            return *this;
-        }
-        
-        DENSE_POLY operator* (const DENSE_POLY& other) const{
-            DENSE_POLY result = fft_multiply(*this, other);
-            result.clean();
-            return result;
-        }
-        
-        DENSE_POLY operator*= (const DENSE_POLY& other){
-            *this = fft_multiply(*this, other);
-            *this->clean();
-            return *this;
-        }
-        
-        DENSE_POLY operator+ (const long double val) const{
-            DENSE_POLY result;
-            if(this->coefficients.empty()){
-                result.coefficients = {val};
-                return result;
-            }
-            if(this->min_deg!=0){
-                result.coefficients.resize(this->degree()+1, 0);
-                std::vector<long double> alias = this->coefficients;
-                result.coefficients[0] = val;
-                int min = this->min_deg
-                for(int i = 0; i < alias.size(); i++){
-                    result.coefficients[i+min] = alias[i];
-                }
-            }
-            else{
-                result[0] += val;
-            }
-            return result;
-        }
-        
-        DENSE_POLY operator- (const long double val) const{
-            DENSE_POLY result;
-            if(this->coefficients.empty()){
-                result.coefficients = {-val};
-                return result;
-            }
-            if(this->min_deg!=0){
-                result.coefficients.resize(this->degree()+1, 0);
-                std::vector<long double> alias = this->coefficients;
-                result.coefficients[0] = -val;
-                int min = this->min_deg
-                for(int i = 0; i < alias.size(); i++){
-                    result.coefficients[i+min] = alias[i];
-                }
-            }
-            else{
-                result[0] -= val;
-            }
-            return result;
-        }
-        
-        DENSE_POLY operator* (const long double val) const{
-            DENSE_POLY result = *this;
-            if (val == 0 || this->coefficients.empty()){
-                result.coefficients = {0};
-                result.min_deg = 0;
-            }
-            else std::transform(result.begin(), result.end(), result.begin(), [a = val](auto p){return p*a;});
-            return result;
-        }
-        
-        DENSE_POLY operator/ (const long double val) const{
-            DENSE_POLY result = *this;
-            if (val == 0 || this->coefficients.empty()){
-                result.coefficients = {0};
-                result.min_deg = 0;
-            }
-            else std::transform(result.begin(), result.end(), result.begin(), [a = val](auto p){return p/a;});
-            return result;
-        }
-        
-        DENSE_POLY& operator+= (const long double val){
-            if(this->coefficients.empty()){
-                this->coefficients = {val};
-                return *this;
-            }
-            if(this->min_deg!=0){
-                std::vector<long double> temp((this->degree())+1, 0);
-                temp[0] = val;
-                int min = this->min_deg
-                for(int i = 0; i < this->coefficients.size(); i++){
-                    alias[i+min] = this->coefficients[i];
-                }
-                this->coefficients = alias;
-                this->min_deg = 0;
-            }
-            else{
-                this->coefficients[0] += val;
-            }
-            return *this;
-        }
-        
-        DENSE_POLY& operator-= (const long double val){
-            if(this->coefficients.empty()){
-                this->coefficients = {-val};
-                return *this;
-            }
-            if(this->min_deg!=0){
-                std::vector<long double> temp(this->degree()+1, 0);
-                temp[0] = -val;
-                int min = this->min_deg
-                for(int i = 0; i < this->coefficients.size(); i++){
-                    alias[i+min] = this->coefficients[i];
-                }
-                this->coefficients = alias;
-                this->min_deg = 0;
-            }
-            else{
-                this->coefficients[0] -= val;
-            }
-            return *this;
-        }
-        
-        DENSE_POLY& operator*= (const long double val){
-            if(val == 0 || this->coefficients.empty()){
-                this->coefficients = {0};
-                this->min_deg = 0;
-            }
-            else std::transform(this->begin(), this->end(), this->begin(), [a = val](auto& p){return p*a;});
-            return *this;
-        }
-        
-        DENSE_POLY& operator/= (const long double val){
-            if(val == 0 || this->coefficients.empty()){
-                this->coefficients = {0};
-                this->min_deg = 0;
-            }
-            else std::transform(this->begin(), this->end(), this->begin(), [a = val](auto& p){return p/a;});
-            return *this;
-        }
-        
+        this->coefficients = alias;
+        this->min_deg = 0;
+    }
+    else{
+        this->coefficients[0] -= val;
+    }
+    return *this;
+}
+
+DENSE_POLY& DENSE_POLY::operator*= (const long double val){
+    if(val == 0 || this->coefficients.empty()){
+        this->coefficients = {0};
+        this->min_deg = 0;
+    }
+    else std::transform(this->begin(), this->end(), this->begin(), [a = val](auto& p){return p*a;});
+    return *this;
+}
+
+DENSE_POLY& DENSE_POLY::operator/= (const long double val){
+    if(val == 0 || this->coefficients.empty()){
+        this->coefficients = {0};
+        this->min_deg = 0;
+    }
+    else std::transform(this->begin(), this->end(), this->begin(), [a = val](auto& p){return p/a;});
+    return *this;
 }
 
 class POLY{
