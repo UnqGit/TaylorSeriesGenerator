@@ -151,4 +151,6 @@ class POLY{
         POLY compose(POLY v) const;
 };
 
+std::ostream& operator<<(std::ostream& os, const POLY& p);
+
 extern std::vector<std::vector<long double>> nCr;
