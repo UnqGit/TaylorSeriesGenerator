@@ -13,6 +13,8 @@ struct TERM{
     int pow;
 };
 
+class POLY;
+
 class DENSE_POLY{
     public:
     
@@ -20,11 +22,11 @@ class DENSE_POLY{
         
         int min_deg = 0;
         
-        int degree();
+        int degree() const;
         
-        auto begin();
+        auto begin() const;
         
-        auto end();
+        auto end() const;
         
         POLY dry() const;
         
@@ -63,20 +65,20 @@ class DENSE_POLY{
         DENSE_POLY& operator*= (const long double val);
         
         DENSE_POLY& operator/= (const long double val);
-}
+};
 
 class POLY{
     public:
         
         std::vector<TERM> terms;
         
-        long double operator() (long double x);
+        long double operator() (long double x) const;
         
-        void negate();
+        POLY& negate();
         
-        auto begin();
+        auto begin() const;
         
-        auto end();
+        auto end() const;
         
         POLY operator-() const;
         
@@ -125,7 +127,7 @@ class POLY{
         not doing it rn.
         */
         
-        void print(std::ostream& os) const;
+        void print(std::ostream& os);
         
         int degree() const;
         
@@ -136,7 +138,7 @@ class POLY{
         long double definite_integrate(long double a, long double b) const;
         
         POLY compose(POLY v) const;
-}
+};
 
 std::vector<std::vector<long double>> nCr{
 {1.0},
