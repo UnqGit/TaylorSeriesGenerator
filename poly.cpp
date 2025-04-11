@@ -66,6 +66,16 @@ long double poly(std::vector<TERM> polycoef, long double x){
     return result;
 }
 
+std::vector<TERM> poly_der(std::vector<TERM> derPoly){
+    for(size_t i = 0; i < derPoly.size(); i++){
+        derPoly[i].coef*=derPoly[i].pow;
+        derPoly[i].pow--;
+    }
+    if(derPoly.back().pow<0) derPoly.pop_back();
+    if(derPoly.empty()) derPoly = {{0,0}};
+    return derPoly;
+}
+
 std::vector<TERM> poly_sum(std::vector<TERM> v1, std::vector<TERM> v2){
     std::vector<TERM> result, default_vec{{0,0}};
     auto poly_sum_direct = [&](){
@@ -147,11 +157,19 @@ void fft(std::vector<complex>& a, bool invert){
 }
 
 auto DENSE_POLY::begin() const{
-    return this->coefficients.begin();
+    return this->coefficients.cbegin();
 }
 
 auto DENSE_POLY::end() const{
+    return this->coefficients.cend();
+}
+
+auto DENSE_POLY::begin(){
     return this->coefficients.begin();
+}
+        
+auto DENSE_POLY::end(){
+    return this->coefficients.end();
 }
 
 DENSE_POLY fft_multiply(const DENSE_POLY& a, const DENSE_POLY& b){
@@ -509,22 +527,30 @@ long double POLY::operator() (long double x) const{
 
 POLY& POLY::negate(){
     std::vector<TERM>& alias = this->terms;
-    std::transform(alias.begin(), alias.end(), alias.begin(), [](auto p){return {-p.coef, p.pow};});
+    std::transform(alias.begin(), alias.end(), alias.begin(), [](auto p){return TERM(-p.coef, p.pow);});
     return *this;
 }
 
 auto POLY::begin() const{
-    return this->terms.begin();
+    return this->terms.cbegin();
 }
 
 auto POLY::end() const{
+    return this->terms.cend();
+}
+
+auto POLY::begin(){
+    return this->terms.begin();
+}
+
+auto POLY::end(){
     return this->terms.end();
 }
 
 POLY POLY::operator-() const{
     POLY result;
     result.terms = this->terms;
-    std::transform(result.terms.begin(), result.terms.end(), result.terms.begin(), [](auto p){return {-p.coef, p.pow};});
+    std::transform(result.terms.begin(), result.terms.end(), result.terms.begin(), [](auto p){return TERM(-p.coef, p.pow);});
     return result;
 }
 
@@ -588,14 +614,14 @@ POLY POLY::operator- (long double val) const{
 POLY POLY::operator* (long double val) const{
     POLY result;
     result.terms = this->terms;
-    std::transform(result.terms.begin(), result.terms.end(), result.terms.begin(), [a = val](auto p){return {p.coef*a, p.pow};});
+    std::transform(result.terms.begin(), result.terms.end(), result.terms.begin(), [a = val](auto p){return TERM(p.coef*a, p.pow);});
     return result;
 }
 
 POLY POLY::operator/ (long double val) const{
     POLY result;
     result.terms = this->terms;
-    std::transform(result.terms.begin(), result.terms.end(), result.terms.begin(), [a = val](auto p){return {p.coef/a, p.pow};});
+    std::transform(result.terms.begin(), result.terms.end(), result.terms.begin(), [a = val](auto p){return TERM(p.coef/a, p.pow);});
     return result;
 }
 
@@ -615,13 +641,13 @@ POLY& POLY::operator-= (long double val){
 
 POLY& POLY::operator*= (long double val){
     std::vector<TERM>& alias = this->terms;
-    std::transform(alias.begin(), alias.end(), alias.begin(), [a = val](auto p){return {p.coef*a, p.pow};});
+    std::transform(alias.begin(), alias.end(), alias.begin(), [a = val](auto p){return TERM(p.coef*a, p.pow);});
     return *this;
 }
 
 POLY& POLY::operator/= (long double val){
     std::vector<TERM>& alias = this->terms;
-    std::transform(alias.begin(), alias.end(), alias.begin(), [a = val](auto p){return {p.coef/a, p.pow};});
+    std::transform(alias.begin(), alias.end(), alias.begin(), [a = val](auto p){return TERM(p.coef/a, p.pow);});
     return *this;
 }
 
@@ -637,7 +663,7 @@ POLY POLY::operator^= (int power){
 }
 
 DENSE_POLY POLY::wet() const{
-    std::vector<TERM>& alias = this->terms;
+    std::vector<TERM> alias = this->terms;
     std::vector<long double> temp(alias.front().pow-alias.back().pow+1, 0);
     for(auto& [coefs, pows] : alias){
         temp[pows] = coefs;
@@ -659,8 +685,8 @@ long double POLY::operator[] (int power) const{
 not doing it rn.
 */
 
-void POLY::print(std::ostream& os){
-    std::vector<TERM>& alias = this->terms;
+void POLY::print(std::ostream& os) const{
+    std::vector<TERM> alias = this->terms;
     if(alias.empty()){
         os << 0;
         return;
@@ -692,7 +718,7 @@ POLY POLY::derivative(POLY v) const{
 
 POLY POLY::integrate(POLY v) const{
     POLY result;
-    result.terms = poly_indef_int(v.terms);
+    result.terms = poly_ind_int(v.terms);
     return result;
 }
 
@@ -702,7 +728,8 @@ long double POLY::definite_integrate(long double a, long double b) const{
 
 POLY POLY::compose(POLY v) const{
     POLY result;
-    result.terms = poly_compose(this->terms, v);
+    std::vector<TERM> alias = this->terms;
+    result.terms = poly_compose(alias, v.terms);
     return result;
 }
 
