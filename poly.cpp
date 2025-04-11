@@ -69,9 +69,12 @@ long double poly(std::vector<TERM> polycoef, long double x){
 std::vector<TERM> poly_sum(std::vector<TERM> v1, std::vector<TERM> v2){
     std::vector<TERM> result, default_vec{{0,0}};
     auto poly_sum_direct = [&](){
-        result = (v1.wet()+v2.wet()).dry();
+        POLY V1, V2;
+        V1.terms = v1;
+        V2.terms = v2;
+        result = (V1.wet()+V2.wet()).dry().terms;
         return result.empty()?default_vec:result;
-    }
+    };
     auto poly_sum_unomap = [&](){
         std::unordered_map<int, long double> res;
         for(const auto& [coefs, pows] : v1) res[pows]+=coefs;
@@ -79,25 +82,28 @@ std::vector<TERM> poly_sum(std::vector<TERM> v1, std::vector<TERM> v2){
         for(const auto& [pows , coefs] : res)if(coefs!=0)result.push_back({coefs, pows});
         std::sort(result.begin(), result.end(), [](const auto& a, const auto& b){return a.pow>b.pow;});
         return result.empty()?default_vec:result;
-    }
-    return (std::max(v1.front().pow, v2.front().pow)-v1.size()-v2.size() < 5.5*(v1.size()+v2.size())*(32 - __builtin_clz(static_cast<unsigned int>(v1.size()+v2.size())))) ? poly_sum_direct(v1, v2) : poly_sum_unomap(v1, v2);
+    };
+    return (std::max(v1.front().pow, v2.front().pow)-v1.size()-v2.size() < 5.5*(v1.size()+v2.size())*(32 - __builtin_clz(static_cast<unsigned int>(v1.size()+v2.size())))) ? poly_sum_direct() : poly_sum_unomap();
 }
 
 std::vector<TERM> poly_diff(std::vector<TERM> v1, std::vector<TERM> v2){
     std::vector<TERM> result, default_vec{{0,0}};
-    auto poly_sum_direct = [&](){
-        result = (v1.wet()-v2.wet()).dry();
+    auto poly_diff_direct = [&](){
+        POLY V1, V2;
+        V1.terms = v1;
+        V2.terms = v2;
+        result = (V1.wet()-V2.wet()).dry().terms;
         return result.empty()?default_vec:result;
-    }
-    auto poly_sum_unomap = [&](){
+    };
+    auto poly_diff_unomap = [&](){
         std::unordered_map<int, long double> res;
         for(const auto& [coefs, pows] : v1) res[pows]=coefs;
         for(const auto& [coefs, pows] : v2) res[pows]-=coefs;
         for(const auto& [pows , coefs] : res)if(coefs!=0)result.push_back({coefs, pows});
         std::sort(result.begin(), result.end(), [](const auto& a, const auto& b){return a.pow>b.pow;});
         return result.empty()?default_vec:result;
-    }
-    return (std::max(v1.front().pow, v2.front().pow)-v1.size()-v2.size() < 5.5*(v1.size()+v2.size())*(32 - __builtin_clz(static_cast<unsigned int>(v1.size()+v2.size())))) ? poly_sum_direct(v1, v2) : poly_sum_unomap(v1, v2);
+    };
+    return (std::max(v1.front().pow, v2.front().pow)-v1.size()-v2.size() < 5.5*(v1.size()+v2.size())*(32 - __builtin_clz(static_cast<unsigned int>(v1.size()+v2.size())))) ? poly_diff_direct() : poly_diff_unomap();
 }
 
 std::vector<TERM> unomap_poly_mult(const std::vector<TERM>& p1, const std::vector<TERM>& p2){
@@ -140,6 +146,14 @@ void fft(std::vector<complex>& a, bool invert){
     }
 }
 
+auto DENSE_POLY::begin() const{
+    return this->coefficients.begin();
+}
+
+auto DENSE_POLY::end() const{
+    return this->coefficients.begin();
+}
+
 DENSE_POLY fft_multiply(const DENSE_POLY& a, const DENSE_POLY& b){
     std::vector<complex> fa(a.begin(), a.end()), fb(b.begin(), b.end());
     int n = 2LL << (31 - __builtin_clz(static_cast<unsigned int>(a.coefficients.size() + b.coefficients.size() - 1)));
@@ -150,20 +164,23 @@ DENSE_POLY fft_multiply(const DENSE_POLY& a, const DENSE_POLY& b){
     for (int i = 0; i < n; i++) fa[i] *= fb[i];
     fft(fa, true);
     DENSE_POLY result;
-    result.coefficients(n);
+    result.coefficients.resize(n, 0);
     for (int i = 0; i < n; i++) result.coefficients[i] = fa[i].real;
     result.min_deg = a.min_deg+b.min_deg;
     return result;
 }
 
-std::vector<TERM> poly_fft_mult(const std::vector<TERM>& v1, const std::vector<TERM>& v2) {
-    DENSE_POLY d1 = v1.wet();
-    DENSE_POLY d2 = v2.wet();
+std::vector<TERM> poly_fft_mult(const std::vector<TERM>& v1, const std::vector<TERM>& v2){
+    POLY V1, V2;
+    V1.terms = v1;
+    V2.terms = v2;
+    DENSE_POLY d1 = V1.wet();
+    DENSE_POLY d2 = V2.wet();
     DENSE_POLY result_dense = fft_multiply(d1, d2);
-    return result_dense.dry();
+    return result_dense.dry().terms;
 }
 
-std::vector<TERM> poly_mult(std::vector<TERM>& v1, std::vector<TERM>& v2){
+std::vector<TERM> poly_mult(const std::vector<TERM>& v1, const std::vector<TERM>& v2){
     int n = (32 - __builtin_clz(static_cast<unsigned int>(v1.front().pow + v2.front().pow - 1)));
     int k = 1LL<<n;
     int m = v1.size();
@@ -178,12 +195,12 @@ std::vector<TERM> poly_raise(std::vector<TERM> base_poly, int power){
     }
     if(power==1)return base_poly;
     if(base_poly.size()==1){
-        std::vector<TERM> res{{SQaM(base_poly[0].coef), base_poly[0].pow*power}};
+        std::vector<TERM> res{{SQaM(base_poly[0].coef, power), base_poly[0].pow*power}};
         return res;
     }
     if(base_poly.size()==2){
         std::vector<long double> NCR = power <= 100 ? nCr[power] : binomial(power);
-        long double max_coef = SQaM(base_poly[0].coef);
+        long double max_coef = SQaM(base_poly[0].coef, power);
         int max_pow = power*base_poly[0].pow;
         long double diff = base_poly[0].coef/base_poly[1].coef;
         int pow_diff = base_poly[1].pow-base_poly[0].pow;
@@ -236,7 +253,7 @@ std::vector<TERM> poly_compose(std::vector<TERM> v1, std::vector<TERM> v2){
 std::vector<TERM> poly_ind_int(std::vector<TERM> v){
     for(auto& [coefs, pows] : v){
         coefs/=(pows+1);
-        pow++;
+        pows++;
     }
     return v;
 }
@@ -259,16 +276,8 @@ std::string power_display(int i){
     return result;
 }
 
-int DENSE_POLY::degree(){
+int DENSE_POLY::degree() const{
     return this->coefficients.size()+min_deg-1;
-}
-
-auto DENSE_POLY::begin(){
-    return this->coefficients.begin();
-}
-
-auto DENSE_POLY::end(){
-    return this->coefficients.begin();
 }
 
 POLY DENSE_POLY::dry() const{
@@ -279,7 +288,7 @@ POLY DENSE_POLY::dry() const{
         result.terms = default_vec;
         return result;
     }
-    for(size_t i = this->coefficients.size()-1; i >= 0; i--)
+    for(int i = this->coefficients.size()-1; i >= 0; i--)
         if(std::abs(coefficients[i])>=1e-10) alias.push_back({coefficients[i], i+min_deg});
     if(alias.empty()) alias = default_vec;
     return result;
@@ -329,7 +338,7 @@ DENSE_POLY DENSE_POLY::operator- (const DENSE_POLY& other) const{
 }
 
 DENSE_POLY& DENSE_POLY::operator+= (const DENSE_POLY& other){
-    int max = std::max(this.degree(), other.degree());
+    int max = std::max(this->degree(), other.degree());
     int min = std::min(this->min_deg, other.min_deg);
     int m = this->min_deg;
     int n = other.min_deg;
@@ -342,7 +351,7 @@ DENSE_POLY& DENSE_POLY::operator+= (const DENSE_POLY& other){
 }
 
 DENSE_POLY& DENSE_POLY::operator-= (const DENSE_POLY& other){
-    int max = std::max(this.degree(), other.degree());
+    int max = std::max(this->degree(), other.degree());
     int min = std::min(this->min_deg, other.min_deg);
     int m = this->min_deg;
     int n = other.min_deg;
@@ -368,7 +377,7 @@ DENSE_POLY DENSE_POLY::operator* (const DENSE_POLY& other) const{
 
 DENSE_POLY DENSE_POLY::operator*= (const DENSE_POLY& other){
     *this = fft_multiply(*this, other);
-    *this->clean();
+    this->clean();
     return *this;
 }
 
@@ -382,13 +391,13 @@ DENSE_POLY DENSE_POLY::operator+ (const long double val) const{
         result.coefficients.resize(this->degree()+1, 0);
         std::vector<long double> alias = this->coefficients;
         result.coefficients[0] = val;
-        int min = this->min_deg
+        int min = this->min_deg;
         for(int i = 0; i < alias.size(); i++){
             result.coefficients[i+min] = alias[i];
         }
     }
     else{
-        result[0] += val;
+        result.coefficients[0] += val;
     }
     return result;
 }
@@ -403,13 +412,13 @@ DENSE_POLY DENSE_POLY::operator- (const long double val) const{
         result.coefficients.resize(this->degree()+1, 0);
         std::vector<long double> alias = this->coefficients;
         result.coefficients[0] = -val;
-        int min = this->min_deg
+        int min = this->min_deg;
         for(int i = 0; i < alias.size(); i++){
             result.coefficients[i+min] = alias[i];
         }
     }
     else{
-        result[0] -= val;
+        result.coefficients[0] -= val;
     }
     return result;
 }
@@ -442,11 +451,11 @@ DENSE_POLY& DENSE_POLY::operator+= (const long double val){
     if(this->min_deg!=0){
         std::vector<long double> temp((this->degree())+1, 0);
         temp[0] = val;
-        int min = this->min_deg
+        int min = this->min_deg;
         for(int i = 0; i < this->coefficients.size(); i++){
-            alias[i+min] = this->coefficients[i];
+            temp[i+min] = this->coefficients[i];
         }
-        this->coefficients = alias;
+        this->coefficients = temp;
         this->min_deg = 0;
     }
     else{
@@ -463,11 +472,11 @@ DENSE_POLY& DENSE_POLY::operator-= (const long double val){
     if(this->min_deg!=0){
         std::vector<long double> temp(this->degree()+1, 0);
         temp[0] = -val;
-        int min = this->min_deg
+        int min = this->min_deg;
         for(int i = 0; i < this->coefficients.size(); i++){
-            alias[i+min] = this->coefficients[i];
+            temp[i+min] = this->coefficients[i];
         }
-        this->coefficients = alias;
+        this->coefficients = temp;
         this->min_deg = 0;
     }
     else{
@@ -494,21 +503,21 @@ DENSE_POLY& DENSE_POLY::operator/= (const long double val){
     return *this;
 }
 
-long double POLY::operator() (long double x){
+long double POLY::operator() (long double x) const{
     return poly(this->terms, x);
 }
 
-void POLY::negate(){
+POLY& POLY::negate(){
     std::vector<TERM>& alias = this->terms;
     std::transform(alias.begin(), alias.end(), alias.begin(), [](auto p){return {-p.coef, p.pow};});
     return *this;
 }
 
-auto POLY::begin(){
+auto POLY::begin() const{
     return this->terms.begin();
 }
 
-auto POLY::end(){
+auto POLY::end() const{
     return this->terms.end();
 }
 
@@ -543,14 +552,17 @@ POLY POLY::operator* (const POLY& v2) const{
 
 POLY& POLY::operator+= (POLY v){
     this->terms = poly_sum(this->terms, v.terms);
+    return *this;
 }
 
 POLY& POLY::operator-= (const POLY& v2){
     this->terms = poly_diff(this->terms, v2.terms);
+    return *this;
 }
 
 POLY& POLY::operator*= (POLY v){
     this->terms = poly_mult(this->terms, v.terms);
+    return *this;
 }
 
 // POLY& POLY::operator/= (POLY v){
@@ -588,27 +600,27 @@ POLY POLY::operator/ (long double val) const{
 }
 
 POLY& POLY::operator+= (long double val){
-    std::vector<TERM> alias& = this->terms;
+    std::vector<TERM>& alias = this->terms;
     if(alias.back().pow!=0) alias.push_back({val, 0});
     else alias.back().coef += val;
     return *this;
 }
 
 POLY& POLY::operator-= (long double val){
-    std::vector<TERM> alias& = this->terms;
+    std::vector<TERM>& alias = this->terms;
     if(alias.back().pow!=0) alias.push_back({val, 0});
     else alias.back().coef -= val;
     return *this;
 }
 
 POLY& POLY::operator*= (long double val){
-    std::vector<TERM> alias& = this->terms;
+    std::vector<TERM>& alias = this->terms;
     std::transform(alias.begin(), alias.end(), alias.begin(), [a = val](auto p){return {p.coef*a, p.pow};});
     return *this;
 }
 
 POLY& POLY::operator/= (long double val){
-    std::vector<TERM> alias& = this->terms;
+    std::vector<TERM>& alias = this->terms;
     std::transform(alias.begin(), alias.end(), alias.begin(), [a = val](auto p){return {p.coef/a, p.pow};});
     return *this;
 }
@@ -624,7 +636,7 @@ POLY POLY::operator^= (int power){
     return *this;
 }
 
-DENSE_POLY POLY::wet(){
+DENSE_POLY POLY::wet() const{
     std::vector<TERM>& alias = this->terms;
     std::vector<long double> temp(alias.front().pow-alias.back().pow+1, 0);
     for(auto& [coefs, pows] : alias){
@@ -647,7 +659,7 @@ long double POLY::operator[] (int power) const{
 not doing it rn.
 */
 
-void POLY::print(std::ostream& os) const{
+void POLY::print(std::ostream& os){
     std::vector<TERM>& alias = this->terms;
     if(alias.empty()){
         os << 0;
