@@ -494,210 +494,204 @@ DENSE_POLY& DENSE_POLY::operator/= (const long double val){
     return *this;
 }
 
-class POLY{
-    public:
-        
-        std::vector<TERM> terms;
-        
-        long double operator() (long double x){
-            return poly(this->terms, x);
+long double POLY::operator() (long double x){
+    return poly(this->terms, x);
+}
+
+void POLY::negate(){
+    std::vector<TERM>& alias = this->terms;
+    std::transform(alias.begin(), alias.end(), alias.begin(), [](auto p){return {-p.coef, p.pow};});
+    return *this;
+}
+
+auto POLY::begin(){
+    return this->terms.begin();
+}
+
+auto POLY::end(){
+    return this->terms.end();
+}
+
+POLY POLY::operator-() const{
+    POLY result;
+    result.terms = this->terms;
+    std::transform(result.terms.begin(), result.terms.end(), result.terms.begin(), [](auto p){return {-p.coef, p.pow};});
+    return result;
+}
+
+POLY POLY::operator+ (const POLY& v2) const{
+    POLY result;
+    result.terms = poly_sum(this->terms, v2.terms);
+    return result;
+}
+
+POLY POLY::operator- (const POLY& v2) const{
+    POLY result;
+    result.terms = poly_diff(this->terms, v2.terms);
+    return result;
+}
+
+POLY POLY::operator* (const POLY& v2) const{
+    POLY result;
+    result.terms = poly_mult(this->terms, v2.terms);
+    return result;
+}
+
+// POLY POLY::operator/ (const POLY& v2) const{
+//     ....not yet made the function
+// }
+
+POLY& POLY::operator+= (POLY v){
+    this->terms = poly_sum(this->terms, v.terms);
+}
+
+POLY& POLY::operator-= (const POLY& v2){
+    this->terms = poly_diff(this->terms, v2.terms);
+}
+
+POLY& POLY::operator*= (POLY v){
+    this->terms = poly_mult(this->terms, v.terms);
+}
+
+// POLY& POLY::operator/= (POLY v){
+//     ...not yet made the logic
+// }
+
+POLY POLY::operator+ (long double val) const{
+    POLY result;
+    result.terms = this->terms;
+    if(result.terms.back().pow!=0)result.terms.push_back({val, 0});
+    else result.terms.back().coef += val;
+    return result;
+}
+
+POLY POLY::operator- (long double val) const{
+    POLY result;
+    result.terms = this->terms;
+    if(result.terms.back().pow!=0)result.terms.push_back({val, 0});
+    else result.terms.back().coef -= val;
+    return result;
+}
+
+POLY POLY::operator* (long double val) const{
+    POLY result;
+    result.terms = this->terms;
+    std::transform(result.terms.begin(), result.terms.end(), result.terms.begin(), [a = val](auto p){return {p.coef*a, p.pow};});
+    return result;
+}
+
+POLY POLY::operator/ (long double val) const{
+    POLY result;
+    result.terms = this->terms;
+    std::transform(result.terms.begin(), result.terms.end(), result.terms.begin(), [a = val](auto p){return {p.coef/a, p.pow};});
+    return result;
+}
+
+POLY& POLY::operator+= (long double val){
+    std::vector<TERM> alias& = this->terms;
+    if(alias.back().pow!=0) alias.push_back({val, 0});
+    else alias.back().coef += val;
+    return *this;
+}
+
+POLY& POLY::operator-= (long double val){
+    std::vector<TERM> alias& = this->terms;
+    if(alias.back().pow!=0) alias.push_back({val, 0});
+    else alias.back().coef -= val;
+    return *this;
+}
+
+POLY& POLY::operator*= (long double val){
+    std::vector<TERM> alias& = this->terms;
+    std::transform(alias.begin(), alias.end(), alias.begin(), [a = val](auto p){return {p.coef*a, p.pow};});
+    return *this;
+}
+
+POLY& POLY::operator/= (long double val){
+    std::vector<TERM> alias& = this->terms;
+    std::transform(alias.begin(), alias.end(), alias.begin(), [a = val](auto p){return {p.coef/a, p.pow};});
+    return *this;
+}
+
+POLY POLY::operator^ (int power) const{
+    POLY result;
+    result.terms = poly_raise(this->terms, power);
+    return result;
+}
+
+POLY POLY::operator^= (int power){
+    this->terms = poly_raise(this->terms, power);
+    return *this;
+}
+
+DENSE_POLY POLY::wet(){
+    std::vector<TERM>& alias = this->terms;
+    std::vector<long double> temp(alias.front().pow-alias.back().pow+1, 0);
+    for(auto& [coefs, pows] : alias){
+        temp[pows] = coefs;
+    }
+    DENSE_POLY dense;
+    dense.coefficients = temp;
+    dense.min_deg = alias.back().pow;
+    return dense;
+}
+
+/*
+long double POLY::operator[] (int power) const{
+    if(power > this->terms.front().pow) return 0;
+    if(power < 0) return 0;
+    int idx = binary_search(this->terms, power);
+    if(idx < 0) return 0;
+    else return this->terms[idx].coef;
+}
+not doing it rn.
+*/
+
+void POLY::print(std::ostream& os) const{
+    std::vector<TERM>& alias = this->terms;
+    if(alias.empty()){
+        os << 0;
+        return;
+    }
+    if(alias.front().pow==0) os << alias[0].coef;
+    else{
+        if(std::abs(alias[0].coef)==1) os << (alias[0].coef>0?"":"-");
+        else os << (alias[0].coef>0?"":"-") << std::abs(alias[0].coef);
+        os << power_display(alias[0].pow);
+        for(size_t i = 1; i < alias.size(); i++){
+            os << (alias[i].coef>0?" + ":" - ");
+            if((alias[i].coef)==1&&alias[i].pow!=0){}
+            else os << std::abs(alias[i].coef);
+            os << power_display(alias[i].pow);
+            if(i % 10 == 0) os << "\n";
         }
-        
-        void negate(){
-            std::vector<TERM>& alias = this->terms;
-            std::transform(alias.begin(), alias.end(), alias.begin(), [](auto p){return {-p.coef, p.pow};});
-            return *this;
-        }
-        
-        auto begin(){
-            return this->terms.begin();
-        }
-        
-        auto end(){
-            return this->terms.end();
-        }
-        
-        POLY operator-() const{
-            POLY result;
-            result.terms = this->terms;
-            std::transform(result.terms.begin(), result.terms.end(), result.terms.begin(), [](auto p){return {-p.coef, p.pow};});
-            return result;
-        }
-        
-        POLY operator+ (const POLY& v2) const{
-            POLY result;
-            result.terms = poly_sum(this->terms, v2.terms);
-            return result;
-        }
-        
-        POLY operator- (const POLY& v2) const{
-            POLY result;
-            result.terms = poly_diff(this->terms, v2.terms);
-            return result;
-        }
-        
-        POLY operator* (const POLY& v2) const{
-            POLY result;
-            result.terms = poly_mult(this->terms, v2.terms);
-            return result;
-        }
-        
-        // POLY operator/ (const POLY& v2) const{
-        //     ....not yet made the function
-        // }
-        
-        POLY& operator+= (POLY v){
-            this->terms = poly_sum(this->terms, v.terms);
-        }
-        
-        POLY& operator-= (const POLY& v2){
-            this->terms = poly_diff(this->terms, v2.terms);
-        }
-        
-        POLY& operator*= (POLY v){
-            this->terms = poly_mult(this->terms, v.terms);
-        }
-        
-        // POLY& operator/= (POLY v){
-        //     ...not yet made the logic
-        // }
-        
-        POLY operator+ (long double val) const{
-            POLY result;
-            result.terms = this->terms;
-            if(result.terms.back().pow!=0)result.terms.push_back({val, 0});
-            else result.terms.back().coef += val;
-            return result;
-        }
-        
-        POLY operator- (long double val) const{
-            POLY result;
-            result.terms = this->terms;
-            if(result.terms.back().pow!=0)result.terms.push_back({val, 0});
-            else result.terms.back().coef -= val;
-            return result;
-        }
-        
-        POLY operator* (long double val) const{
-            POLY result;
-            result.terms = this->terms;
-            std::transform(result.terms.begin(), result.terms.end(), result.terms.begin(), [a = val](auto p){return {p.coef*a, p.pow};});
-            return result;
-        }
-        
-        POLY operator/ (long double val) const{
-            POLY result;
-            result.terms = this->terms;
-            std::transform(result.terms.begin(), result.terms.end(), result.terms.begin(), [a = val](auto p){return {p.coef/a, p.pow};});
-            return result;
-        }
-        
-        POLY& operator+= (long double val){
-            std::vector<TERM> alias& = this->terms;
-            if(alias.back().pow!=0) alias.push_back({val, 0});
-            else alias.back().coef += val;
-            return *this;
-        }
-        
-        POLY& operator-= (long double val){
-            std::vector<TERM> alias& = this->terms;
-            if(alias.back().pow!=0) alias.push_back({val, 0});
-            else alias.back().coef -= val;
-            return *this;
-        }
-        
-        POLY& operator*= (long double val){
-            std::vector<TERM> alias& = this->terms;
-            std::transform(alias.begin(), alias.end(), alias.begin(), [a = val](auto p){return {p.coef*a, p.pow};});
-            return *this;
-        }
-        
-        POLY& operator/= (long double val){
-            std::vector<TERM> alias& = this->terms;
-            std::transform(alias.begin(), alias.end(), alias.begin(), [a = val](auto p){return {p.coef/a, p.pow};});
-            return *this;
-        }
-        
-        POLY operator^ (int power) const{
-            POLY result;
-            result.terms = poly_raise(this->terms, power);
-            return result;
-        }
-        
-        POLY operator^= (int power){
-            this->terms = poly_raise(this->terms, power);
-            return *this;
-        }
-        
-        DENSE_POLY wet(){
-            std::vector<TERM>& alias = this->terms;
-            std::vector<long double> temp(alias.front().pow-alias.back().pow+1, 0);
-            for(auto& [coefs, pows] : alias){
-                temp[pows] = coefs;
-            }
-            DENSE_POLY dense;
-            dense.coefficients = temp;
-            dense.min_deg = alias.back().pow;
-            return dense;
-        }
-        
-        /*
-        long double operator[] (int power) const{
-            if(power > this->terms.front().pow) return 0;
-            if(power < 0) return 0;
-            int idx = binary_search(this->terms, power);
-            if(idx < 0) return 0;
-            else return this->terms[idx].coef;
-        }
-        not doing it rn.
-        */
-        
-        void print(std::ostream& os) const{
-            std::vector<TERM>& alias = this->terms;
-            if(alias.empty()){
-                os << 0;
-                return;
-            }
-            if(alias.front().pow==0) os << alias[0].coef;
-            else{
-                if(std::abs(alias[0].coef)==1) os << (alias[0].coef>0?"":"-");
-                else os << (alias[0].coef>0?"":"-") << std::abs(alias[0].coef);
-                os << power_display(alias[0].pow);
-                for(size_t i = 1; i < alias.size(); i++){
-                    os << (alias[i].coef>0?" + ":" - ");
-                    if((alias[i].coef)==1&&alias[i].pow!=0){}
-                    else os << std::abs(alias[i].coef);
-                    os << power_display(alias[i].pow);
-                    if(i % 10 == 0) os << "\n";
-                }
-            }
-        }
-        
-        int degree() const{
-            return this->terms.front().pow;
-        }
-        
-        POLY derivative(POLY v) const{
-            POLY result;
-            result.terms = poly_der(v.terms);
-            return result;
-        }
-        
-        POLY integrate(POLY v) const{
-            POLY result;
-            result.terms = poly_indef_int(v.terms);
-            return result;
-        }
-        
-        long double definite_integrate(long double a, long double b) const{
-            return poly_def_int(this->terms, a, b);
-        }
-        
-        POLY compose(POLY v) const{
-            POLY result;
-            result.terms = poly_compose(this->terms, v);
-            return result;
-        }
+    }
+}
+
+int POLY::degree() const{
+    return this->terms.front().pow;
+}
+
+POLY POLY::derivative(POLY v) const{
+    POLY result;
+    result.terms = poly_der(v.terms);
+    return result;
+}
+
+POLY POLY::integrate(POLY v) const{
+    POLY result;
+    result.terms = poly_indef_int(v.terms);
+    return result;
+}
+
+long double POLY::definite_integrate(long double a, long double b) const{
+    return poly_def_int(this->terms, a, b);
+}
+
+POLY POLY::compose(POLY v) const{
+    POLY result;
+    result.terms = poly_compose(this->terms, v);
+    return result;
 }
 
 std::ostream& operator<<(std::ostream& os, const POLY& p) {
