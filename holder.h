@@ -176,9 +176,9 @@ class POLY{
         
         int degree() const;
         
-        POLY derivative(POLY v) const;
+        POLY derivative() const;
         
-        POLY integrate(POLY v) const;
+        POLY integrate() const;
         
         long double definite_integrate(long double a, long double b) const;
         
