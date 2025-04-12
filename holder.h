@@ -44,9 +44,9 @@ class DENSE_POLY{
         
         long double operator() (const long double point) const;
         
-        bool DENSE_POLY::isConstant() const;
+        bool isConstant() const;
         
-        bool DENSE_POLY::isZero() const;
+        bool isZero() const;
         
         DENSE_POLY negate();
         
@@ -100,9 +100,9 @@ class POLY{
         
         long double operator() (long double x) const;
         
-        bool POLY::isConstant() const;
+        bool isConstant() const;
         
-        bool POLY::isZero() const;
+        bool isZero() const;
         
         POLY& negate();
         
