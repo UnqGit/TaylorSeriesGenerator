@@ -208,7 +208,7 @@ void start_text();
 
 std::string get_function();
 
-std::tuple<POLY, POLY> get_coef(std::string& func);
+std::tuple<POLY, POLY> get_poly(std::string& func);
 
 long double get_point(const std::string& prompt,const std::string& func,const std::function<long double(long double)>& poly);
 
