@@ -332,12 +332,12 @@ DENSE_POLY DENSE_POLY::operator+ (const DENSE_POLY& other) const{
     int min = std::min(this->min_deg, other.min_deg);
     int m = this->min_deg;
     int n = other.min_deg;
-    std::vector<long double> alias(max-min+1,0);
+    std::vector<long double> alias(max-min+1, 0);
     for(int i = 0; i < this->coefficients.size(); i++) alias[i+m-min]=this->coefficients[i];
     for(int i = 0; i < other.coefficients.size(); i++) alias[i+n-min]+=other.coefficients[i];
     DENSE_POLY result;
-    result.coefficients=alias;
-    result.min_deg=min;
+    result.coefficients = alias;
+    result.min_deg = min;
     return result;
 }
 
@@ -381,9 +381,18 @@ DENSE_POLY& DENSE_POLY::operator-= (const DENSE_POLY& other){
     return *this;
 }
 
-DENSE_POLY DENSE_POLY::clean(){
+DENSE_POLY& DENSE_POLY::clean(){
     DENSE_POLY& alias = *this;
     std::transform(alias.begin(), alias.end(), alias.begin(), [](auto p){ return std::abs(p) < 1e-10 ? 0 : p;});
+    std::vector<long double>& coefAlias = alias.coefficients;
+    std::vector<long double> default_vec{0};
+    int min = alias.min_deg;
+    if(!coefAlias.empty())while(coefAlias.back()==0) coefAlias.pop_back();
+    int it = 0;
+    for(; it < coefAlias.size(); it++) if(coefAlias[it]!=0) break;
+    std::vector<long double> newCoefs(coefAlias.begin()+it, coefAlias.end());
+    alias.coefficients = newCoefs.empty() ? default_vec : newCoefs;
+    alias.min_deg = newCoefs.empty() ? 0 : min+it;
     return *this;
 }
 
@@ -479,6 +488,7 @@ DENSE_POLY& DENSE_POLY::operator+= (const long double val){
     else{
         this->coefficients[0] += val;
     }
+    this->clean();
     return *this;
 }
 
@@ -500,6 +510,7 @@ DENSE_POLY& DENSE_POLY::operator-= (const long double val){
     else{
         this->coefficients[0] -= val;
     }
+    this->clean();
     return *this;
 }
 
@@ -509,6 +520,7 @@ DENSE_POLY& DENSE_POLY::operator*= (const long double val){
         this->min_deg = 0;
     }
     else std::transform(this->begin(), this->end(), this->begin(), [a = val](auto& p){return p*a;});
+    this->clean();
     return *this;
 }
 
@@ -518,6 +530,7 @@ DENSE_POLY& DENSE_POLY::operator/= (const long double val){
         this->min_deg = 0;
     }
     else std::transform(this->begin(), this->end(), this->begin(), [a = val](auto& p){return p/a;});
+    this->clean();
     return *this;
 }
 
@@ -664,13 +677,14 @@ POLY POLY::operator^= (int power){
 
 DENSE_POLY POLY::wet() const{
     std::vector<TERM> alias = this->terms;
-    std::vector<long double> temp(alias.front().pow-alias.back().pow+1, 0);
+    std::vector<long double> temp(alias.front().pow - alias.back().pow + 1, 0);
+    int min = alias.back().pow;
     for(auto& [coefs, pows] : alias){
-        temp[pows] = coefs;
+        temp[pows - min] = coefs;
     }
     DENSE_POLY dense;
     dense.coefficients = temp;
-    dense.min_deg = alias.back().pow;
+    dense.min_deg = min;
     return dense;
 }
 
@@ -731,6 +745,30 @@ POLY POLY::compose(POLY v) const{
     std::vector<TERM> alias = this->terms;
     result.terms = poly_compose(alias, v.terms);
     return result;
+}
+
+DENSE_POLY operator+ (const long double val, DENSE_POLY v){
+    return v+val;
+}
+
+DENSE_POLY operator- (const long double val, DENSE_POLY v){
+    return -(v-val);
+}
+
+DENSE_POLY operator* (const long double val, DENSE_POLY v){
+    return v*val;
+}
+
+POLY operator+ (long double val, POLY v){
+    return v+val;
+}
+
+POLY operator- (long double val, POLY v){
+    return -(v-val);
+}
+
+POLY operator* (long double val, POLY v){
+    return v*val;
 }
 
 std::ostream& operator<<(std::ostream& os, const POLY& p) {
