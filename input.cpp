@@ -6,9 +6,9 @@ void start_text(){
     std::cout << "\t2.) INPUT: 3,2,0,1; function would be same as above(i.e, highest degree first).\n";
     std::cout << "\t3.) INPUT: 3x^3 + 2x^2 + 1; these terms can be in any order(power denoted via '^').\n";
     std::cout << "\t4.) INPUT: 3x3+2x2+1; this is also valid(number following x is regarded as power).\n";
-    std::cout << "\t4.) INPUT: 3x³+2x²+1; this is also valid(superscipt as power).\n";
-    std::cout << "\t5.) INPUT: 3x^3 2x^2 1; this is also valid.\n";
-    std::cout << "\t6.) INPUT: 3X³ 2X^2 + x1 + 1; this is also valid.\n\n";
+    std::cout << "\t5.) INPUT: 3x³+2x²+1; this is also valid(superscipt as power).\n";
+    std::cout << "\t6.) INPUT: 3x^3 2x^2 1; this is also valid.\n";
+    std::cout << "\t7.) INPUT: 3X³ 2X^2 + x1 + 1; this is also valid.\n(NOTE: decimal coefficients are allowed too)\n\n";
     std::cout << "NOTE: things like:\n";
     std::cout << "\t1.) 2² are not valid and would be considered as 22.\n";
     std::cout << "\t2.) Parenthesis(\"()\") are not allowed.\n";
@@ -46,11 +46,20 @@ bool invalid_input(std::string& input){
     input = std::regex_replace(input, std::regex("([+-]|#)\\s"), "$1");
     if(input[0]=='#') input.insert(input.begin(), '1');
     for(int i = 0; i < input.size(); i++){
-        if(input[i]=='#'||input[i]=='.'){
+        if(input[i]=='#'){
           if(i+1==input.length()) return true;
           else if(!(std::isdigit(input[i+1]))) return true;
             while(i+1<input.length()){
                 if(input[i+1]==' ')break;
+                if(!std::isdigit(input[i+1])) return true;
+                i++;
+            }
+        }
+        if(input[i]=='.'){
+          if(i+1==input.length()) return true;
+          else if(!(std::isdigit(input[i+1]))) return true;
+            while(i+1<input.length()){
+                if(input[i+1]==' '||input[i+1]=='#')break;
                 if(!std::isdigit(input[i+1])) return true;
                 i++;
             }
