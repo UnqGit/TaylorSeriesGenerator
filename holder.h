@@ -222,4 +222,6 @@ long double get_point(const std::string& func, const std::function<long double(l
 
 int get_degree(const std::string& function);
 
+void derivatives(const std::string& func, int degree, POLY& p1, POLY& p2, long double point);
+
 extern std::vector<std::vector<long double>> nCr;
