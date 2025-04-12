@@ -9,6 +9,11 @@
 #include <numeric>
 #include <map>
 #include <unordered_map>
+#include <sstream>
+#include <regex>
+#include <cmath>
+#include <limits>
+#include <tuple>
 
 struct TERM{
     long double coef;
