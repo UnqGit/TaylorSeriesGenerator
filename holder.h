@@ -218,8 +218,8 @@ std::string get_function();
 
 std::tuple<POLY, POLY> get_poly(std::string& func);
 
-long double get_point(const std::string& prompt,const std::string& func,const std::function<long double(long double)>& poly);
+long double get_point(const std::string& func, const std::function<long double(long double)>& poly);
 
-int get_degree(const std::string& prompt);
+int get_degree(const std::string& function);
 
 extern std::vector<std::vector<long double>> nCr;
