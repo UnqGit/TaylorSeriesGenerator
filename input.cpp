@@ -108,47 +108,8 @@ std::string get_poly(){
     return input;
 }
 
-/*POLY get_vec(const std::string& input){
-    std::vector<long double> coefs;
-    std::vector<int> powers;
-    std::vector<std::string> separation;
-    std::stringstream ss(input);
-    std::string temp, temp2;
-    int power;
-    while(ss >> temp) separation.push_back(temp);
-    if(input.find('#')!=std::string::npos){
-        for(int i = 0; i < separation.size(); i++){
-            temp = separation[i];
-            if(temp.find('#')!=std::string::npos){
-                int z = temp.find('#');
-                coefs.push_back(std::stold(temp.substr(0, z)));
-                powers.push_back(std::stoi(temp.substr(z + 1, temp.size()-z)));
-            }
-            else{
-                coefs.push_back(std::stold(temp));
-                powers.push_back(0);
-            }
-        }
-        power = *max_element(powers.begin(), powers.end());
-        std::vector<long double> result(power+1, 0);
-        for(int i = 0; i < powers.size(); i++){
-            int it = powers[i];
-            result[power - it]+=coefs[i];
-        }
-        return result;
-    }
-    else{
-        std::vector<long double> result;
-        for(int i = 0; i < separation.size(); i++){
-            result.push_back(std::stold(separation[i]));
-        }
-        return result;
-    }
-}*/
-
 POLY get_vec(const std::string& input){
-    std::vector<long double> coefs;
-    std::vector<int> powers;
+    std::vector<TERM> poly_terms;
     std::vector<std::string> separation;
     std::stringstream ss(input);
     std::string temp, temp2;
@@ -159,32 +120,26 @@ POLY get_vec(const std::string& input){
             temp = separation[i];
             if(temp.find('#')!=std::string::npos){
                 int z = temp.find('#');
-                coefs.push_back(std::stold(temp.substr(0, z)));
-                powers.push_back(std::stoi(temp.substr(z + 1, temp.size()-z)));
+                TERM t = TERM(std::stold(temp.substr(0, z)), std::stoi(temp.substr(z + 1, temp.size() - z)));
+                poly_terms.push_back(t);
             }
             else{
-                coefs.push_back(std::stold(temp));
-                powers.push_back(0);
+                TERM t = TERM(std::stold(temp), 0);
+                poly_terms.push_back(t);
             }
         }
-        power = *max_element(powers.begin(), powers.end());
-        std::vector<long double> result(power+1, 0);
-        for(int i = 0; i < powers.size(); i++){
-            int it = powers[i];
-            result[power - it]+=coefs[i];
-        }
-        return result;
     }
     else{
-        std::vector<long double> result;
         for(int i = 0; i < separation.size(); i++){
-            result.push_back(std::stold(separation[i]));
+            TERM t = TERM(std::stold(separation[i]), separation.size()-i - 1);
+            poly_terms.push_back(t);
         }
-        return result;
     }
+    POLY p = POLY(poly_terms);
+    return p;
 }
 
-std::tuple<POLY, POLY> get_coef(std::string& func){
+std::tuple<POLY, POLY> get_poly(std::string& func){
     POLY polycoef, polycoef2;
     std::string prompt, input;
     prompt = "Enter the";
