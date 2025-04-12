@@ -95,7 +95,7 @@ std::string get_function(){
     return func;
 }
 
-std::string get_poly(){
+std::string get_poly_terms(){
     std::string input;
     do{
         std::getline(std::cin, input);
@@ -146,23 +146,29 @@ std::tuple<POLY, POLY> get_poly(std::string& func){
     prompt+=(func=="pow"?" base":func=="log"?" function":"");
     prompt+=" polynomial/coefficients:\n";
     std::cout << prompt;
-    input = get_poly();
+    input = get_poly_terms();
     polycoef = get_vec(input);
     if(func=="pow"||func=="log"){
         prompt = "Enter the ";
-        prompt+=(func=="pow"?"exponent":"base(leave empty or enter 0 to get natural log)");
+        prompt+=(func=="pow"?"exponent":"base(leave empty or enter 0 or negative number to get natural log)");
         prompt+=" polynomial/coefficients:\n";
         std::cout << prompt;
-        input = get_poly();
+        input = get_poly_terms();
         polycoef2 = get_vec(input);
+        if(func=="log"){
+            if(polycoef2.isConstant()){
+                if(polycoef2.terms.front().coef == 1 || polycoef2.terms.front().coef < 0)
+                polycoef2.terms = {{0,0}};
+            }
+        }
     }
     return std::tuple<POLY, POLY>(polycoef, polycoef2);
 }
 
-long double get_point(const std::string& prompt,const std::string& func,const std::function<long double(long double)>& poly){
-    std::cout << prompt;
+long double get_point(const std::string& func, const std::function<long double(long double)>& poly){
+    std::cout << "Enter the point you'd like the taylor series around: ";
     long double a;
-    while(!(std::cin >> a) || ((func=="sqrt"||func=="pow")&&(poly(a)<0)) || ((func=="log")&&(poly(a)<=0)) || ((func=="acos"||func=="asin")&&(std::abs(poly(a))>1))){
+    while(!(std::cin >> a) || (func=="sqrt"&&(poly(a)<0)) || ((func=="log")&&(poly(a)<=0)) || ((func=="acos"||func=="asin")&&(std::abs(poly(a))>1))){
         if(std::cin.fail()) std::cout << "Invalid number";
         else std::cout << "Number is out of domain of function";
         std::cout << " please enter again:\n";
@@ -174,13 +180,22 @@ long double get_point(const std::string& prompt,const std::string& func,const st
     return a;
 }
 
-int get_degree(const std::string& prompt){
+int get_degree(const std::string& function){
     int degree;
-    std::cout << prompt;
-    while(!(std::cin >> degree) || degree < 0 || degree > 100){
-        std::cout << "Invalid number please enter again(valid range: 0-100):\n";
-        std::cin.clear();
-        std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cout << "Enter the degree till you'd like the taylor series: ";
+    if(function!="pow"&&function!="sqrt"){
+        while(!(std::cin >> degree) || degree < 0 || degree > 100){
+            std::cout << "Invalid number please enter again(valid range: 0-100):\n";
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+    }
+    else{
+        while(!(std::cin >> degree) || degree < 0){
+            std::cout << "Invalid number please enter again:\n";
+            std::cin.clear();
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
     }
     std::cin.clear();
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
