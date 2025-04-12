@@ -43,13 +43,13 @@ std::vector<long double> cosh_derivatives(const POLY& polycoef, long double x, i
 
 std::vector<long double> sqrt_derivatives(const POLY& polycoef, long double x, int d){
     std::vector<long double> der(d+1);
-    der[0] = std::sqrt(poly(polycoef, x));
+    der[0] = std::sqrt(polycoef(x));
     if(polycoef.isConstant()){
         if(d>0)std::fill(der.begin()+1, der.end(), 0.0);
         return der;
     }
-    std::vector<long double> dr = polycoef.derivative();
-    int minP = d < polycoef.size()-1 ? d : polycoef.size() - 1;
+    POLY dr = polycoef.derivative();
+    int minP = d < polycoef.degree() ? d : polycoef.degree();
     std::vector<long double> derivs(minP);
     for(int i = 1; i <= minP; i++){
         der[i] = dr(x)/2.0;
