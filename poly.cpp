@@ -316,6 +316,14 @@ long double DENSE_POLY::operator() (const long double point) const{
     return horner_poly(this->coefficients, point, this->min_deg);
 }
 
+bool DENSE_POLY::isConstant() const{
+    return (this->degree()==0);
+}
+
+bool DENSE_POLY::isZero() const{
+    return (this->degree()==0&&this->coefficients[0]==0);
+}
+
 DENSE_POLY DENSE_POLY::negate(){
     std::transform(this->begin(), this->end(), this->begin(), [](auto p){return -p;});
     return *this;
@@ -536,6 +544,14 @@ DENSE_POLY& DENSE_POLY::operator/= (const long double val){
 
 long double POLY::operator() (long double x) const{
     return poly(this->terms, x);
+}
+
+bool POLY::isConstant() const{
+    return (this->degree()==0);
+}
+
+bool POLY::isZero() const{
+    return (this->degree()==0&&this->terms.front().coef==0);
 }
 
 POLY& POLY::negate(){
