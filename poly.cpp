@@ -724,15 +724,15 @@ int POLY::degree() const{
     return this->terms.front().pow;
 }
 
-POLY POLY::derivative(POLY v) const{
-    POLY result;
-    result.terms = poly_der(v.terms);
+POLY POLY::derivative() const{
+    POLY result = *this;
+    result.terms = poly_der(result.terms);
     return result;
 }
 
-POLY POLY::integrate(POLY v) const{
-    POLY result;
-    result.terms = poly_ind_int(v.terms);
+POLY POLY::integrate() const{
+    POLY result = *this;
+    result.terms = poly_ind_int(result.terms);
     return result;
 }
 
