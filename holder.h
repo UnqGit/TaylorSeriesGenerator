@@ -51,7 +51,17 @@ class DENSE_POLY{
         
         DENSE_POLY& operator-= (const DENSE_POLY& other);
         
-        DENSE_POLY clean();
+        DENSE_POLY& clean();
+        
+        DENSE_POLY() : coefficients{0}, min_deg(0) {}
+        
+        DENSE_POLY(std::vector<long double> c, int m = 0) : coefficients(c), min_deg(m){
+            if (coefficients.empty()) {
+                coefficients = {0};
+                min_deg = 0;
+            }
+            clean();
+        }
         
         DENSE_POLY operator* (const DENSE_POLY& other) const;
         
@@ -90,6 +100,30 @@ class POLY{
         auto begin();
         
         auto end();
+        
+        POLY() : terms{} {}
+        
+        POLY(std::vector<TERM> t) {
+            if (t.empty()) {
+                terms = {{0, 0}};
+                return;
+            }
+            terms = t;
+            std::sort(terms.begin(), terms.end(),
+            [](const TERM& a, const TERM& b) { return a.pow > b.pow; });
+            std::vector<TERM> newT;
+            for (const auto& term : terms) {
+                if (std::abs(term.coef) > 1e-10){
+                    if (!newT.empty() && newT.back().pow == term.pow) {
+                        newT.back().coef += term.coef;
+                    }
+                    else {
+                        newT.push_back(term);
+                    }
+                }
+            }
+            terms = newT.empty() ? std::vector<TERM>{{0, 0}} : newT;
+        }
         
         POLY operator-() const;
         
@@ -150,6 +184,18 @@ class POLY{
         
         POLY compose(POLY v) const;
 };
+
+DENSE_POLY operator+ (const long double val, DENSE_POLY v);
+
+DENSE_POLY operator- (const long double val, DENSE_POLY v);
+
+DENSE_POLY operator* (const long double val, DENSE_POLY v);
+
+POLY operator+ (long double val, POLY v);
+
+POLY operator- (long double val, POLY v);
+
+POLY operator* (long double val, POLY v);
 
 std::ostream& operator<<(std::ostream& os, const POLY& p);
 
