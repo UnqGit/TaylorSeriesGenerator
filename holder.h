@@ -44,6 +44,10 @@ class DENSE_POLY{
         
         long double operator() (const long double point) const;
         
+        bool DENSE_POLY::isConstant() const;
+        
+        bool DENSE_POLY::isZero() const;
+        
         DENSE_POLY negate();
         
         DENSE_POLY operator-() const;
@@ -95,6 +99,10 @@ class POLY{
         std::vector<TERM> terms;
         
         long double operator() (long double x) const;
+        
+        bool POLY::isConstant() const;
+        
+        bool POLY::isZero() const;
         
         POLY& negate();
         
