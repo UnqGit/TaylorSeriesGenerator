@@ -65,7 +65,7 @@ std::vector<long double> sqrt_derivatives(const POLY& polycoef, long double x, i
 }
 
 std::vector<long double> sin_derivatives(const POLY& polycoef, long double x, int d){
-    std::vector<long double> der(d+1);
+    std::vector<long double> der(d+1, 0.0);
     long double sinHELP = std::sin(polycoef(x)), cosHELP = std::cos(polycoef(x));
     der[0] = (sinHELP);
     if(polycoef.isConstant()){
