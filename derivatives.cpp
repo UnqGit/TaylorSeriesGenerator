@@ -206,6 +206,34 @@ std::vector<long double> tanh_derivatives(const POLY& polycoef, long double x, i
     return der;
 }
 
+std::vector<long double> ln_const_base_derivatives(const POLY& polycoef, long double x, int d){
+    std::vector<long double> der(d+1, 0);
+    long double help = polycoef(x);
+    der[0] = std::log(help);
+    if(polycoef.isConstant()){
+        std::fill(der.begin() + 1, der.end(), 0);
+        return der;
+    }
+    POLY dr = polycoef.derivative();
+    int minP = std::min(d, polycoef.degree());
+    std::vector<long double> derivs(minP, 0);
+    for(int i = 0; i < minP; i++){
+        derivs[i] = dr(x);
+        dr = dr.derivative();
+    }
+    if(d > 0) der[1] = derivs[0]/help;
+    for(int i = 2; i < d + 1; i++){
+        std::vector<long double> NCR = nCr[i-1];
+        int min = std::min(i , minP + 1) - 1;
+        for(int j = 0; j < min; j++){
+            der[i] -= NCR[j+1]*der[i - 1 - j]*derivs[min - 1 - j];
+        }
+        if(i <= minP) der[i] += derivs[i - 1];
+        der[i]/=help;
+    }
+    return der;
+}
+
 void derivatives(const std::string& func, int degree, POLY& p1, POLY& p2, long double point){
     std::vector<long double> derivatives;
     if(func == "exp"){
@@ -231,5 +259,14 @@ void derivatives(const std::string& func, int degree, POLY& p1, POLY& p2, long d
     }
     else if(func == "tanh"){
         derivatives = tanh_derivatives(p1, point, degree);
+    }
+    else if(func == "log"){
+        if(p2.isConstant()){
+            derivatives = ln_const_base_derivatives(p1, point, degree);
+            if(!p2.isZero()){
+                long double val = std::log(p2(point));
+                std::transform(derivatives.begin(), derivatives.end(), derivatives.begin(), [a = val](auto p){return p/a;});
+            }
+        }
     }
 }
