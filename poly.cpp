@@ -47,6 +47,7 @@ std::vector<long double> binomial(int n){
 }
 
 long double poly(std::vector<TERM> polycoef, long double x){
+    if(polycoef.empty()) return 0.0;
     if(x == 0) return polycoef.back().pow == 0 ? polycoef.back().coef : 0;
     if(x == 1) return std::accumulate(polycoef.begin(), polycoef.end(), 0.0L, [](long double total, const auto& p){return total+p.coef;});
     if(x == -1) return std::accumulate(polycoef.begin(), polycoef.end(), 0.0L, [](long double total, const auto& p){return (p.pow%2)?total-p.coef:total+p.coef;});
@@ -67,12 +68,14 @@ long double poly(std::vector<TERM> polycoef, long double x){
 }
 
 std::vector<TERM> poly_der(std::vector<TERM> derPoly){
+    std::vector<TERM> default_vec{{0,0}};
+    if(derPoly.empty()) return default_vec;
     for(size_t i = 0; i < derPoly.size(); i++){
         derPoly[i].coef*=derPoly[i].pow;
         derPoly[i].pow--;
     }
-    if(derPoly.back().pow<0) derPoly.pop_back();
-    if(derPoly.empty()) derPoly = {{0,0}};
+    if(derPoly.back().pow < 0) derPoly.pop_back();
+    if(derPoly.empty()) return default_vec;
     return derPoly;
 }
 
@@ -121,7 +124,7 @@ std::vector<TERM> unomap_poly_mult(const std::vector<TERM>& p1, const std::vecto
     for(size_t i = 0; i < p1.size(); i++)
         for(size_t j = 0; j < p2.size(); j++)
             res[p1[i].pow+p2[j].pow]+=p1[i].coef*p2[j].coef;
-    std::vector<TERM> result, default_vec;
+    std::vector<TERM> result, default_vec{{0,0}};
     for(auto& [k, v] : res)
         if(v!=0)result.push_back({v, k});
     std::sort(result.begin(), result.end(), [](const auto& p1, const auto& p2){return p1.pow>p2.pow;});
