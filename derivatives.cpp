@@ -159,6 +159,53 @@ std::vector<long double> tan_derivatives(const POLY& polycoef, long double x, in
     return der;
 }
 
+std::vector<long double> tanh_derivatives(const POLY& polycoef, long double x, int d){
+    std::vector<long double> der(d+1, 0.0);
+    der[0] = (std::tanh(polycoef(x)));
+    long double helper = 1.0 - der[0]*der[0];
+    if(polycoef.isConstant()){
+        if(d > 0) std::fill(der.begin()+1, der.end(), 0);
+        return der;
+    }
+    POLY dr = polycoef.derivative();
+    int minP = d < polycoef.degree() ? d : polycoef.degree();
+    std::vector<long double> derivs(minP);
+    for(int i = 0; i < minP; i++){
+        derivs[i] = dr(x);
+        dr = dr.derivative();
+    }
+    std::vector<long double> factor(minP, 0.0);
+    if(d > 0){
+        der[1] = derivs[0]*helper;
+        factor[0] = 2;
+    }
+    auto p = [&](){
+        std::vector<long double> newfactor(factor.begin(), factor.end());
+        for(int i = 1; i < factor.size(); i++){
+            if(factor[i]==0){
+                newfactor[i] = 2 + factor[i - 1];
+                break;
+            }
+            else newfactor[i] += factor[i - 1];
+        }
+        factor = std::move(newfactor);
+    };
+    for(int i = 2; i < d + 1; i++){
+        int min = i < derivs.size() + 1 ? i : derivs.size() + 1;
+        for(int j = 0; j < min - 1; j++){
+            std::vector<long double> NCR = nCr[i - 2 - j];
+            long double result = 0.0;
+            for(int k = 0; k < NCR.size(); k++){
+                result += NCR[k] * der[k] * der[NCR.size() - k];
+            }
+            der[i] += result * factor[j] * derivs[j];
+        }
+        der[i] = ((i<=derivs.size())?helper*derivs[i - 1] : 0) - der[i];
+        p();
+    }
+    return der;
+}
+
 void derivatives(const std::string& func, int degree, POLY& p1, POLY& p2, long double point){
     std::vector<long double> derivatives;
     if(func == "exp"){
