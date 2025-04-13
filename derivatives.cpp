@@ -234,6 +234,32 @@ std::vector<long double> ln_const_base_derivatives(const POLY& polycoef, long do
     return der;
 }
 
+std::vector<long double> pow_const_base_derivatives(const POLY& polycoef, long double const_base, long double x, int d){
+    std::vector<long double> der(d+1, 0);
+    der[0] = std::pow(const_base, polycoef(x));
+    if(polycoef.isConstant()){
+        std::fill(der.begin() + 1, der.end(), 0);
+        return der;
+    }
+    POLY dr = polycoef.derivative();
+    int minP = std::min(d, polycoef.degree());
+    std::vector<long double> derivs(minP, 0);
+    for(int i = 0; i < minP; i++){
+        derivs[i] = dr(x);
+        dr = dr.derivative();
+    }
+    long double helper = std::log(const_base);
+    for(int i = 1; i < d + 1; i++){
+        int min = std::min(i, minP);
+        std::vector<long double> NCR = nCr[i-1];
+        for(int j = 0; j < minP; j++){
+            der[i] += NCR[j]*der[i-1-j]*derivs[j];
+        }
+        der[i]*=helper;
+    }
+    return der;
+}
+
 void derivatives(const std::string& func, int degree, POLY& p1, POLY& p2, long double point){
     std::vector<long double> derivatives;
     if(func == "exp"){
@@ -269,4 +295,22 @@ void derivatives(const std::string& func, int degree, POLY& p1, POLY& p2, long d
             }
         }
     }
+    else if(func == "pow"){
+        if(p2.isConstant()){
+            long double val = p2(point);
+            if(val >= 0 && val==std::floor(val)){
+                int VAL = static_cast<int>(val);
+                POLY result = p1^VAL;
+                std::cout << result;
+                std::cout << std::endl;
+                return;
+            }
+            //else derivatives = pow_const_pow_derivatives(p1, val, point);
+        }
+        else if(p1.isConstant()){
+            derivatives = pow_const_base_derivatives(p2, p1(point), point, degree);
+        }
+    }
+    for(const auto& c : derivatives) std::cout << c << " ";
+    std::cout << std::endl;
 }
