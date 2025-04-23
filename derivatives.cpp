@@ -1,12 +1,9 @@
 #include "holder.h"
 
 std::vector<long double> exp_derivatives(const POLY& polycoef, long double x, int d){
-    std::vector<long double> der(d+1);
+    std::vector<long double> der(d+1, 0);
     der[0] = (std::exp(polycoef(x)));
-    if(polycoef.isConstant()){
-        if(d > 0) std::fill(der.begin()+1, der.end(), 0);
-        return der;
-    }
+    if(polycoef.isConstant()) return der;
     POLY dr = polycoef.derivative();
     int minP = d < polycoef.degree() ? d : polycoef.degree();
     std::vector<long double> derivs(minP);
@@ -41,13 +38,17 @@ std::vector<long double> cosh_derivatives(const POLY& polycoef, long double x, i
     return final;
 }
 
+std::vector<long double> pow_const_base_derivatives(const POLY& polycoef, long double const_base, long double x, int d){
+    std::vector<long double> der = exp_derivatives(polycoef, x, d);
+    long double factor = std::log(const_base);
+    std::transform(der.begin(), der.end(), [a = factor](auto p){return a*p;});
+    return der;
+}
+
 std::vector<long double> sqrt_derivatives(const POLY& polycoef, long double x, int d){
-    std::vector<long double> der(d+1);
+    std::vector<long double> der(d+1, 0);
     der[0] = std::sqrt(polycoef(x));
-    if(polycoef.isConstant()){
-        if(d>0)std::fill(der.begin()+1, der.end(), 0.0);
-        return der;
-    }
+    if(polycoef.isConstant()) return der;
     POLY dr = polycoef.derivative();
     int minP = d < polycoef.degree() ? d : polycoef.degree();
     std::vector<long double> derivs(minP);
@@ -65,13 +66,10 @@ std::vector<long double> sqrt_derivatives(const POLY& polycoef, long double x, i
 }
 
 std::vector<long double> sin_derivatives(const POLY& polycoef, long double x, int d){
-    std::vector<long double> der(d+1, 0.0);
+    std::vector<long double> der(d+1, 0);
     long double sinHELP = std::sin(polycoef(x)), cosHELP = std::cos(polycoef(x));
     der[0] = (sinHELP);
-    if(polycoef.isConstant()){
-        if(d > 0) std::fill(der.begin()+1, der.end(), 0);
-        return der;
-    }
+    if(polycoef.isConstant()) return der;
     POLY dr = polycoef.derivative();
     if(d > 0) der[1] = cosHELP*(dr(x));
     POLY old_A = dr.derivative();
@@ -89,13 +87,10 @@ std::vector<long double> sin_derivatives(const POLY& polycoef, long double x, in
 }
 
 std::vector<long double> cos_derivatives(const POLY& polycoef, long double x, int d){
-    std::vector<long double> der(d+1);
+    std::vector<long double> der(d+1, 0);
     long double sinHELP = std::sin(polycoef(x)), cosHELP = std::cos(polycoef(x));
     der[0] = (cosHELP);
-    if(polycoef.isConstant()){
-        if(d > 0) std::fill(der.begin()+1, der.end(), 0);
-        return der;
-    }
+    if(polycoef.isConstant()) return der;
     POLY dr = polycoef.derivative();
     if(d > 0) der[1] = -sinHELP*(dr(x));
     POLY old_A = dr.derivative();
@@ -113,13 +108,10 @@ std::vector<long double> cos_derivatives(const POLY& polycoef, long double x, in
 }
 
 std::vector<long double> tan_derivatives(const POLY& polycoef, long double x, int d){
-    std::vector<long double> der(d+1, 0.0);
+    std::vector<long double> der(d+1, 0);
     der[0] = (std::tan(polycoef(x)));
     long double helper = der[0]*der[0] + 1.0;
-    if(polycoef.isConstant()){
-        if(d > 0) std::fill(der.begin()+1, der.end(), 0);
-        return der;
-    }
+    if(polycoef.isConstant()) return der;
     POLY dr = polycoef.derivative();
     int minP = d < polycoef.degree() ? d : polycoef.degree();
     std::vector<long double> derivs(minP);
@@ -160,13 +152,10 @@ std::vector<long double> tan_derivatives(const POLY& polycoef, long double x, in
 }
 
 std::vector<long double> tanh_derivatives(const POLY& polycoef, long double x, int d){
-    std::vector<long double> der(d+1, 0.0);
+    std::vector<long double> der(d+1, 0);
     der[0] = (std::tanh(polycoef(x)));
     long double helper = 1.0 - der[0]*der[0];
-    if(polycoef.isConstant()){
-        if(d > 0) std::fill(der.begin()+1, der.end(), 0);
-        return der;
-    }
+    if(polycoef.isConstant()) return der;
     POLY dr = polycoef.derivative();
     int minP = d < polycoef.degree() ? d : polycoef.degree();
     std::vector<long double> derivs(minP);
@@ -210,10 +199,7 @@ std::vector<long double> ln_const_base_derivatives(const POLY& polycoef, long do
     std::vector<long double> der(d+1, 0);
     long double help = polycoef(x);
     der[0] = std::log(help);
-    if(polycoef.isConstant()){
-        std::fill(der.begin() + 1, der.end(), 0);
-        return der;
-    }
+    if(polycoef.isConstant()) return der;
     POLY dr = polycoef.derivative();
     int minP = std::min(d, polycoef.degree());
     std::vector<long double> derivs(minP, 0);
@@ -230,32 +216,6 @@ std::vector<long double> ln_const_base_derivatives(const POLY& polycoef, long do
         }
         if(i <= minP) der[i] += derivs[i - 1];
         der[i]/=help;
-    }
-    return der;
-}
-
-std::vector<long double> pow_const_base_derivatives(const POLY& polycoef, long double const_base, long double x, int d){
-    std::vector<long double> der(d+1, 0);
-    der[0] = std::pow(const_base, polycoef(x));
-    if(polycoef.isConstant()){
-        std::fill(der.begin() + 1, der.end(), 0);
-        return der;
-    }
-    POLY dr = polycoef.derivative();
-    int minP = std::min(d, polycoef.degree());
-    std::vector<long double> derivs(minP, 0);
-    for(int i = 0; i < minP; i++){
-        derivs[i] = dr(x);
-        dr = dr.derivative();
-    }
-    long double helper = std::log(const_base);
-    for(int i = 1; i < d + 1; i++){
-        int min = std::min(i, minP);
-        std::vector<long double> NCR = nCr[i-1];
-        for(int j = 0; j < minP; j++){
-            der[i] += NCR[j]*der[i-1-j]*derivs[j];
-        }
-        der[i]*=helper;
     }
     return der;
 }
