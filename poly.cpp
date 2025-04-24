@@ -139,7 +139,7 @@ void fft(std::vector<complex>& a, bool invert){
         j ^= bit;
         if (i < j) std::swap(a[i], a[j]);
     }
-    static constexpr long double TAU = 2*M_PIl;
+    static constexpr long double TAU = 6.28318530717958647692528676655900576839433879875021;
     for(int len = 2; len <= n; len <<= 1){
         long double ang = TAU / len * (invert ? -1 : 1);
         complex wlen(std::cos(ang), std::sin(ang));
