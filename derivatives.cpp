@@ -53,7 +53,7 @@ std::vector<long double> pow_const_base_derivatives(const POLY& polycoef, long d
     for(int i = 1; i < d + 1; i++){
         int min = std::min(i, minP);
         std::vector<long double> NCR = nCr[i-1];
-        for(int j = 0; j < minP; j++){
+        for(int j = 0; j < min; j++){
             der[i] += NCR[j]*der[i-1-j]*derivs[j];
         }
         der[i]*=helper;
