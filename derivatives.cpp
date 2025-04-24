@@ -39,9 +39,25 @@ std::vector<long double> cosh_derivatives(const POLY& polycoef, long double x, i
 }
 
 std::vector<long double> pow_const_base_derivatives(const POLY& polycoef, long double const_base, long double x, int d){
-    std::vector<long double> der = exp_derivatives(polycoef, x, d);
-    long double factor = std::log(const_base);
-    std::transform(der.begin(), der.end(), [a = factor](auto p){return a*p;});
+    std::vector<long double> der(d+1, 0);
+    der[0] = std::pow(const_base, polycoef(x));
+    if(polycoef.isConstant()) return der;
+    POLY dr = polycoef.derivative();
+    int minP = std::min(d, polycoef.degree());
+    std::vector<long double> derivs(minP, 0);
+    for(int i = 0; i < minP; i++){
+        derivs[i] = dr(x);
+        dr = dr.derivative();
+    }
+    long double helper = std::log(const_base);
+    for(int i = 1; i < d + 1; i++){
+        int min = std::min(i, minP);
+        std::vector<long double> NCR = nCr[i-1];
+        for(int j = 0; j < minP; j++){
+            der[i] += NCR[j]*der[i-1-j]*derivs[j];
+        }
+        der[i]*=helper;
+    }
     return der;
 }
 
@@ -188,8 +204,40 @@ std::vector<long double> ln_const_base_derivatives(const POLY& polycoef, long do
     return der;
 }
 
+std::vector<long double> atan_derivatives(const POLY& polycoef, long double x, int d){
+    std::vector<long double> der(d + 1, 0);
+    long double pValue = polycoef(x);
+    der[0] = std::atan(pValue);
+    if(polycoef.isConstant()) return der;
+    int minP = std::min(polycoef.degree(), d) + 1;
+    std::vector<long double> derivs(d + 1, 0);
+    derivs[0] = pValue;
+    POLY dr = polycoef.derivative();
+    for(int i = 1; i < minP; i++){
+        derivs[i] = dr(x);
+        dr = dr.derivative();
+    }
+    long double pFactor = 1.0 + pValue * pValue;
+    for(int i = 1; i < d + 1; i++){
+        long double result = 0;
+        std::vector<long double> factor = nCr[i - 1];
+        for(int j = 1; j < i; j++){
+            std::vector<long double> NCR = nCr[j - 1];
+            long double res = 0;
+            for(int k = 1; k < j + 1; k++){
+                res += NCR[k - 1] * derivs[k - 1] * derivs[j + 1 - k];
+            }
+            result += factor[j] * der[i - j] * res;
+        }
+        der[i] = derivs[i] - 2.0 * result;
+        der[i] /= pFactor;
+    }
+    return der;
+}
+
 void derivatives(const std::string& func, int degree, POLY& p1, POLY& p2, long double point){
     std::vector<long double> derivatives;
+    degree = degree > 100 ? 100 : degree;
     if(func == "exp"){
         derivatives = exp_derivatives(p1, point, degree);
     }
@@ -213,6 +261,9 @@ void derivatives(const std::string& func, int degree, POLY& p1, POLY& p2, long d
     }
     else if(func == "tanh"){
         derivatives = tanh_derivatives(p1, point, degree);
+    }
+    else if(func == "atan"){
+        derivatives = atan_derivatives(p1, point, degree);
     }
     else if(func == "log"){
         if(p2.isConstant()){
