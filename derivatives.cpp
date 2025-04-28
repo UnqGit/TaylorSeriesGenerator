@@ -81,46 +81,61 @@ std::vector<long double> sqrt_derivatives(const POLY& polycoef, long double x, i
     return der;
 }
 
-std::vector<long double> sin_derivatives(const POLY& polycoef, long double x, int d){
-    std::vector<long double> der(d+1, 0);
-    long double sinHELP = std::sin(polycoef(x)), cosHELP = std::cos(polycoef(x));
-    der[0] = (sinHELP);
-    if(polycoef.isConstant()) return der;
-    POLY dr = polycoef.derivative();
-    if(d > 0) der[1] = cosHELP*(dr(x));
-    POLY old_A = dr.derivative();
-    POLY old_B = dr*dr;
-    POLY A = old_A;
-    POLY B = old_B;
-    for(int i = 2; i < d + 1; i++){
-        der[i] = cosHELP*A(x) - sinHELP*B(x);
-        old_A = A;
-        old_B = B;
-        A = old_A.derivative() - old_B*dr;
-        B = old_A*dr + old_B.derivative();
-    }
-    return der;
-}
+// std::vector<long double> sin_derivatives(const POLY& polycoef, long double x, int d){
+//     std::vector<long double> der(d+1, 0);
+//     long double sinHELP = std::sin(polycoef(x)), cosHELP = std::cos(polycoef(x));
+//     der[0] = (sinHELP);
+//     if(polycoef.isConstant()) return der;
+//     POLY dr = polycoef.derivative();
+//     if(d > 0) der[1] = cosHELP*(dr(x));
+//     POLY old_A = dr.derivative();
+//     POLY old_B = dr*dr;
+//     POLY A = old_A;
+//     POLY B = old_B;
+//     for(int i = 2; i < d + 1; i++){
+//         der[i] = cosHELP*A(x) - sinHELP*B(x);
+//         old_A = A;
+//         old_B = B;
+//         A = old_A.derivative() - old_B*dr;
+//         B = old_A*dr + old_B.derivative();
+//     }
+//     return der;
+// }
 
-std::vector<long double> cos_derivatives(const POLY& polycoef, long double x, int d){
-    std::vector<long double> der(d+1, 0);
-    long double sinHELP = std::sin(polycoef(x)), cosHELP = std::cos(polycoef(x));
-    der[0] = (cosHELP);
-    if(polycoef.isConstant()) return der;
-    POLY dr = polycoef.derivative();
-    if(d > 0) der[1] = -sinHELP*(dr(x));
-    POLY old_A = dr.derivative();
-    POLY old_B = dr*dr;
-    POLY A = old_A;
-    POLY B = old_B;
-    for(int i = 2; i < d + 1; i++){
-        der[i] = -sinHELP*A(x)-cosHELP*B(x);
-        old_A = A;
-        old_B = B;
-        A = old_A.derivative() - old_B*dr;
-        B = old_A*dr + old_B.derivative();
+// std::vector<long double> cos_derivatives(const POLY& polycoef, long double x, int d){
+//     std::vector<long double> der(d+1, 0);
+//     long double sinHELP = std::sin(polycoef(x)), cosHELP = std::cos(polycoef(x));
+//     der[0] = (cosHELP);
+//     if(polycoef.isConstant()) return der;
+//     POLY dr = polycoef.derivative();
+//     if(d > 0) der[1] = -sinHELP*(dr(x));
+//     POLY old_A = dr.derivative();
+//     POLY old_B = dr*dr;
+//     POLY A = old_A;
+//     POLY B = old_B;
+//     for(int i = 2; i < d + 1; i++){
+//         der[i] = -sinHELP*A(x)-cosHELP*B(x);
+//         old_A = A;
+//         old_B = B;
+//         A = old_A.derivative() - old_B*dr;
+//         B = old_A*dr + old_B.derivative();
+//     }
+//     return der;
+// }
+
+std::vector<long double> sin_derivatives(const POLY& polycoef, long double x, int d){
+    std::vector<long double> result(d + 1, 0);
+    int minP = std::min(d, polycoef.degree()) + 1;
+    POLY dr = polycoef;
+    std::vector<long double> derivs(minP, 0);
+    for(int i = 0; i < minP; i++){
+        derivs[i] = dr(x);
+        dr = dr.derivative();
     }
-    return der;
+    long double helper = std::cos(derivs[0]);
+    for(int i = 0; i < d + 1; i++){
+        
+    }
 }
 
 std::vector<long double> tan_derivatives(const POLY& polycoef, long double x, int d){
@@ -235,6 +250,105 @@ std::vector<long double> atan_derivatives(const POLY& polycoef, long double x, i
     return der;
 }
 
+std::vector<long double> pow_const_pow_derivatives(const POLY& polycoef, long double const_pow, long double x, int d){
+    std::vector<long double> der(d+1, 0);
+    long double helper = polycoef(x);
+    der[0] = std::pow(helper, const_pow);
+    if(polycoef.isConstant()) return der;
+    int minP = std::min(polycoef.degree(), d);
+    POLY dr = polycoef.derivative();
+    std::vector<long double> derivs(minP, 0);
+    for(int i = 0; i < minP; i++){
+        derivs[i] = dr(x);
+        dr = dr.derivative();
+    }
+    for(int i = 1; i < d + 1; i++){
+        std::vector<long double> NCR = nCr[i - 1];
+        long double result = 0.0;
+        int min = std::min(i, minP);
+        for(int j = 1; j < min; j++){
+            result += derivs[j - 1]*der[i - j]*(NCR[j - 1]*const_pow - NCR[j]);
+        }
+        if(i <= minP) result += const_pow*derivs[i - 1]*der[0];
+        der[i] = result/helper;
+    }
+    return der;
+}
+
+std::vector<long double> division(std::vector<long double> numerator, std::vector<long double> denominator){
+    std::vector<long double> result(numerator.size(), 0);
+    long double helper = denominator[0];
+    for(int i = 0; i < result.size(); i++){
+        result[i] = numerator[i];
+        std::vector<long double> NCR = nCr[i];
+        for(int j = 0; j < i; j++){
+            result[i] -= NCR[j]*denominator[i - j]*result[j];
+        }
+        result[i] /= helper;
+    }
+    return result;
+}
+
+std::vector<long double> asin_derivatives(const POLY& polycoef, long double x, int d){
+    std::vector<long double> der(d + 1, 0);
+    int minP = std::min(polycoef.degree(), d) + 1;
+    POLY dr = polycoef;
+    std::vector<long double> derivs(minP, 0);
+    for(int i = 0; i < minP; i++){
+        derivs[i] = dr(x);
+        dr = dr.derivative();
+    }
+    der[0] = std::asin(derivs[0]);
+    long double helper = std::sqrt(1 - derivs[0]*derivs[0]);
+    if(polycoef.isConstant()) return der;
+    for(int n = 1; n < d + 1; n++){
+        std::vector<long double> factor = nCr[n - 1];
+        long double outer_result = 0.0;
+        for(int i = 1; i < n; i++){
+            std::vector<long double> NCR = nCr[n-i-1];
+            long double result = 0.0;
+            int min = std::min(n - i, minP);
+            for(int j = 0; j < min; j++){
+                result += NCR[j]*derivs[j]*der[n-i-j];
+            }
+            outer_result += factor[i-1]*der[i]*result;
+        }
+        if(n <= minP) outer_result += derivs[n];
+        der[n] = outer_result/helper;
+    }
+    return result;
+}
+
+std::vector<long double> asin_derivatives(const POLY& polycoef, long double x, int d){
+    std::vector<long double> der(d + 1, 0);
+    int minP = std::min(polycoef.degree(), d) + 1;
+    POLY dr = polycoef;
+    std::vector<long double> derivs(minP, 0);
+    for(int i = 0; i < minP; i++){
+        derivs[i] = dr(x);
+        dr = dr.derivative();
+    }
+    der[0] = std::acos(derivs[0]);
+    long double helper = std::sqrt(1 - derivs[0]*derivs[0]);
+    if(polycoef.isConstant()) return der;
+    for(int n = 1; n < d + 1; n++){
+        std::vector<long double> factor = nCr[n - 1];
+        long double outer_result = 0.0;
+        for(int i = 1; i < n; i++){
+            std::vector<long double> NCR = nCr[n-i-1];
+            long double result = 0.0;
+            int min = std::min(n - i, minP);
+            for(int j = 0; j < min; j++){
+                result += NCR[j]*derivs[j]*der[n-i-j];
+            }
+            outer_result += factor[i-1]*der[i]*result;
+        }
+        if(n <= minP) outer_result += derivs[n];
+        der[n] = -outer_result/helper;
+    }
+    return result;
+}
+
 void derivatives(const std::string& func, int degree, POLY& p1, POLY& p2, long double point){
     std::vector<long double> derivatives;
     degree = degree > 100 ? 100 : degree;
@@ -256,6 +370,12 @@ void derivatives(const std::string& func, int degree, POLY& p1, POLY& p2, long d
     else if(func == "cos"){
         derivatives = cos_derivatives(p1, point, degree);
     }
+    else if(func == "asin"){
+        derivatives = sin_derivatives(p1, point, degree);
+    }
+    else if(func == "acos"){
+        derivatives = cos_derivatives(p1, point, degree);
+    }
     else if(func == "tan"){
         derivatives = tan_derivatives(p1, point, degree);
     }
@@ -273,6 +393,9 @@ void derivatives(const std::string& func, int degree, POLY& p1, POLY& p2, long d
                 std::transform(derivatives.begin(), derivatives.end(), derivatives.begin(), [a = val](auto p){return p/a;});
             }
         }
+        else{
+            derivatives = division(ln_const_base_derivatives(p1, point, degree), ln_const_base_derivatives(p2, point, degree));
+        }
     }
     else if(func == "pow"){
         if(p2.isConstant()){
@@ -284,7 +407,7 @@ void derivatives(const std::string& func, int degree, POLY& p1, POLY& p2, long d
                 std::cout << std::endl;
                 return;
             }
-            //else derivatives = pow_const_pow_derivatives(p1, val, point);
+            else derivatives = pow_const_pow_derivatives(p1, val, point, degree);
         }
         else if(p1.isConstant()){
             derivatives = pow_const_base_derivatives(p2, p1(point), point, degree);
