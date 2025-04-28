@@ -81,48 +81,6 @@ std::vector<long double> sqrt_derivatives(const POLY& polycoef, long double x, i
     return der;
 }
 
-// std::vector<long double> sin_derivatives(const POLY& polycoef, long double x, int d){
-//     std::vector<long double> der(d+1, 0);
-//     long double sinHELP = std::sin(polycoef(x)), cosHELP = std::cos(polycoef(x));
-//     der[0] = (sinHELP);
-//     if(polycoef.isConstant()) return der;
-//     POLY dr = polycoef.derivative();
-//     if(d > 0) der[1] = cosHELP*(dr(x));
-//     POLY old_A = dr.derivative();
-//     POLY old_B = dr*dr;
-//     POLY A = old_A;
-//     POLY B = old_B;
-//     for(int i = 2; i < d + 1; i++){
-//         der[i] = cosHELP*A(x) - sinHELP*B(x);
-//         old_A = A;
-//         old_B = B;
-//         A = old_A.derivative() - old_B*dr;
-//         B = old_A*dr + old_B.derivative();
-//     }
-//     return der;
-// }
-
-// std::vector<long double> cos_derivatives(const POLY& polycoef, long double x, int d){
-//     std::vector<long double> der(d+1, 0);
-//     long double sinHELP = std::sin(polycoef(x)), cosHELP = std::cos(polycoef(x));
-//     der[0] = (cosHELP);
-//     if(polycoef.isConstant()) return der;
-//     POLY dr = polycoef.derivative();
-//     if(d > 0) der[1] = -sinHELP*(dr(x));
-//     POLY old_A = dr.derivative();
-//     POLY old_B = dr*dr;
-//     POLY A = old_A;
-//     POLY B = old_B;
-//     for(int i = 2; i < d + 1; i++){
-//         der[i] = -sinHELP*A(x)-cosHELP*B(x);
-//         old_A = A;
-//         old_B = B;
-//         A = old_A.derivative() - old_B*dr;
-//         B = old_A*dr + old_B.derivative();
-//     }
-//     return der;
-// }
-
 std::vector<long double> sin_derivatives(const POLY& polycoef, long double x, int d){
     std::vector<long double> der(d + 1, 0);
     int minP = std::min(d, polycoef.degree()) + 1;
